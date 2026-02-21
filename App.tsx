@@ -18,7 +18,7 @@ import { mockCustomers } from './data/mockCustomers.ts';
 import { generateRandomPhoneNumber } from './utils/phone.ts';
 import Toast from './components/Toast.tsx';
 import AuthModal from './components/AuthModal.tsx';
-import { listenToAuthState } from './services/auth.ts';
+import { listenToAuthState, signOutUser } from './services/auth.ts';
 import { User } from 'firebase/auth';
 import { resolveTabsFromBusinessType, TabConfig } from './utils/tabResolver.ts';
 
@@ -56,6 +56,7 @@ const AppContent: React.FC = () => {
   const { products, updateProduct } = useProducts();
   const timeoutRef = useRef<number | null>(null);
   const isSimulatingRef = useRef(false); // To prevent multiple simulation timeouts
+  const isFirstOrderRef = useRef(true);  // First order uses a shorter delay (12-18s)
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -64,10 +65,14 @@ const AppContent: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const authChecked = useRef(false);
 
-  // Dynamic Tabs state
-  const [tabs, setTabs] = useState<TabConfig[]>([]);
+  // Dynamic Tabs state — lazy initializer so nav renders immediately on first paint
+  const [tabs, setTabs] = useState<TabConfig[]>(() => {
+    const category = localStorage.getItem('dukan-store-category');
+    const aiContext = localStorage.getItem('dukan-business-intelligence-context');
+    return resolveTabsFromBusinessType(category, aiContext);
+  });
 
-  // Resolve tabs once on mount and when onboarding completes
+  // Re-resolve tabs once onboarding completes (category may have just been written)
   useEffect(() => {
     const category = localStorage.getItem('dukan-store-category');
     const aiContext = localStorage.getItem('dukan-business-intelligence-context');
@@ -120,11 +125,8 @@ const AppContent: React.FC = () => {
   }, [orders]);
 
 
-  const handleFirstInteraction = useCallback(() => {
-    if (isInteractionDone) return;
-    console.log("Order simulation temporarily disabled for development.");
-    // setInteractionDone(true);
-  }, [isInteractionDone]);
+  // No longer triggered by click — simulation starts explicitly after onboarding completes
+  const handleFirstInteraction = useCallback(() => {}, []);
 
   const newOrderCount = orders.filter(o => o.status === OrderStatus.NEW).length;
 
@@ -224,13 +226,18 @@ const AppContent: React.FC = () => {
     }
 
     isSimulatingRef.current = true;
-    const randomInterval = Math.floor(Math.random() * (40000 - 20000 + 1)) + 20000; // 20-40 seconds
-    
+
+    // First order: 12–18 s after onboarding. Subsequent orders: 25–30 s apart.
+    const minMs = isFirstOrderRef.current ? 12000 : 25000;
+    const maxMs = isFirstOrderRef.current ? 18000 : 30000;
+    const randomInterval = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
+
     if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
     }
 
     timeoutRef.current = window.setTimeout(() => {
+        isFirstOrderRef.current = false; // Mark first trigger done before generating
         generateRandomOrder();
         isSimulatingRef.current = false; // Allow next simulation to be scheduled
     }, randomInterval);
@@ -253,7 +260,7 @@ const AppContent: React.FC = () => {
       case Screen.CATALOG:
         return <CatalogScreen onModalStateChange={handleModalStateChange} />;
       case Screen.SETTINGS:
-        return <SettingsScreen onModalStateChange={handleModalStateChange} />;
+        return <SettingsScreen onModalStateChange={handleModalStateChange} onLogout={handleLogout} />;
       default:
         return <DashboardScreen orders={orders} onModalStateChange={handleModalStateChange} onAddOrders={handleAddOrders} />;
     }
@@ -261,8 +268,13 @@ const AppContent: React.FC = () => {
 
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);
-    handleFirstInteraction();
-    
+    setInteractionDone(true); // Start simulation engine after onboarding
+
+    // Re-resolve tabs now that category is written to localStorage
+    const category = localStorage.getItem('dukan-store-category');
+    const aiContext = localStorage.getItem('dukan-business-intelligence-context');
+    setTabs(resolveTabsFromBusinessType(category, aiContext));
+
     // Trigger auth check immediately post-onboarding
     if (!currentUser && !localStorage.getItem('dukan-guest-mode')) {
         setTimeout(() => setShowAuthModal(true), 500);
@@ -274,29 +286,38 @@ const AppContent: React.FC = () => {
     localStorage.setItem('dukan-guest-mode', 'true');
   };
 
+  const handleLogout = useCallback(async () => {
+    await signOutUser();
+    localStorage.removeItem('dukan-guest-mode');
+    setCurrentUser(null);
+    setShowAuthModal(true);
+  }, []);
+
   return (
-    <div className="h-full bg-black text-white" onClick={handleFirstInteraction}>
-      <>
-        <main className="pb-[calc(4rem+env(safe-area-inset-bottom))] h-full overflow-y-auto hide-scrollbar">
-          {renderScreen()}
-        </main>
-        <BottomNav activeScreen={activeScreen} onNavigate={handleNavigation} newOrderCount={newOrderCount} tabs={tabs} />
-         {newOrderForPopup && (
-          <NewOrderModal 
-            isOpen={!!newOrderForPopup} 
-            order={newOrderForPopup} 
-            onUpdateStatus={handleUpdateStatus}
+    <div className="min-h-screen bg-black flex justify-center">
+      <div className="w-full max-w-[460px] relative bg-black text-white shadow-[#ffffff1a] shadow-2xl flex flex-col min-h-screen" onClick={handleFirstInteraction}>
+        <>
+          <main className="pb-[calc(4rem+env(safe-area-inset-bottom))] flex-1 overflow-y-auto hide-scrollbar">
+            {renderScreen()}
+          </main>
+          <BottomNav activeScreen={activeScreen} onNavigate={handleNavigation} newOrderCount={newOrderCount} tabs={tabs} />
+           {newOrderForPopup && (
+            <NewOrderModal 
+              isOpen={!!newOrderForPopup} 
+              order={newOrderForPopup} 
+              onUpdateStatus={handleUpdateStatus}
+            />
+          )}
+        </>
+        {showOnboarding && <OnboardingFlow onComplete={handleOnboardingComplete} />}
+        {showAuthModal && (
+          <AuthModal 
+            onClose={handleGuestContinue} 
+            onSuccess={() => setShowAuthModal(false)} 
           />
         )}
-      </>
-      {showOnboarding && <OnboardingFlow onComplete={handleOnboardingComplete} />}
-      {showAuthModal && (
-        <AuthModal 
-          onClose={handleGuestContinue} 
-          onSuccess={() => setShowAuthModal(false)} 
-        />
-      )}
-      {error && <Toast message={error} onClose={() => setError(null)} />}
+        {error && <Toast message={error} onClose={() => setError(null)} />}
+      </div>
     </div>
   );
 };

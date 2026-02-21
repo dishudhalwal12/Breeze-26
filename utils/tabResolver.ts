@@ -1,4 +1,4 @@
-import { TabConfig, businessTabPresets } from '../data/businessTabPresets';
+import { TabConfig, businessTabPresets } from '../data/businessTabPresets.ts';
 export type { TabConfig };
 
 export function resolveTabsFromBusinessType(

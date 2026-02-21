@@ -6,6 +6,8 @@ import ManageStoreScreen from './settings/ManageStoreScreen.tsx';
 import NotificationsScreen from './settings/NotificationsScreen.tsx';
 import ChangeLanguageScreen from './settings/ChangeLanguageScreen.tsx';
 import BrandGuideScreen from './settings/BrandGuideScreen.tsx';
+import PrivacyPolicyScreen from './settings/PrivacyPolicyScreen.tsx';
+import HelpCenterScreen from './settings/HelpCenterScreen.tsx';
 import { useLanguage } from '../contexts/LanguageContext.tsx';
 
 const SettingsHeader: React.FC = () => {
@@ -110,24 +112,20 @@ const ContactSupportModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
     );
 };
 
-const MainSettings: React.FC<{ onNavigate: (screen: string) => void; onModalStateChange: (isOpen: boolean) => void }> = ({ onNavigate, onModalStateChange }) => {
+const MainSettings: React.FC<{
+  onNavigate: (screen: string) => void;
+  onModalStateChange: (isOpen: boolean) => void;
+  onLogout: () => void;
+}> = ({ onNavigate, onModalStateChange, onLogout }) => {
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const { t } = useLanguage();
 
   useEffect(() => {
     onModalStateChange(isContactModalOpen);
   }, [isContactModalOpen, onModalStateChange]);
-  
-  const handleHelpCenter = () => {
-    window.open('https://www.dukan.ai/help', '_blank', 'noopener,noreferrer');
-  };
 
   const handleContactSupport = () => {
     setIsContactModalOpen(true);
-  };
-
-  const handlePrivacyPolicy = () => {
-    window.open('https://www.dukan.ai/privacy', '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -149,15 +147,18 @@ const MainSettings: React.FC<{ onNavigate: (screen: string) => void; onModalStat
               <div>
                   <h3 className="text-neutral-400 text-sm font-bold uppercase tracking-wider px-2 pb-2">{t('settings_support')}</h3>
                    <div className="space-y-2">
-                      <SettingsItem icon="help_outline" label={t('settings_help_center')} onClick={handleHelpCenter} />
+                      <SettingsItem icon="help_outline" label={t('settings_help_center')} onClick={() => onNavigate('helpCenter')} />
                       <SettingsItem icon="support_agent" label={t('settings_contact_support')} onClick={handleContactSupport} />
-                      <SettingsItem icon="privacy_tip" label={t('settings_privacy_policy')} onClick={handlePrivacyPolicy} />
+                      <SettingsItem icon="privacy_tip" label={t('settings_privacy_policy')} onClick={() => onNavigate('privacy')} />
                       <SettingsItem icon="palette" label="Brand & Guidelines" onClick={() => onNavigate('brand')} />
                   </div>
               </div>
           </div>
           <div className="p-4">
-               <button className="w-full flex items-center justify-center p-3 bg-[#1A1A1A] rounded-lg text-left transition-colors active:bg-neutral-800">
+               <button
+                onClick={onLogout}
+                className="w-full flex items-center justify-center p-3 bg-[#1A1A1A] rounded-lg text-left transition-colors active:bg-neutral-800"
+              >
                   <span className="material-symbols-outlined text-red-400 mr-2">logout</span>
                   <p className="font-semibold text-red-400">{t('settings_logout')}</p>
               </button>
@@ -171,9 +172,10 @@ const MainSettings: React.FC<{ onNavigate: (screen: string) => void; onModalStat
 
 interface SettingsScreenProps {
   onModalStateChange: (isOpen: boolean) => void;
+  onLogout: () => void;
 }
 
-const SettingsScreen: React.FC<SettingsScreenProps> = ({ onModalStateChange }) => {
+const SettingsScreen: React.FC<SettingsScreenProps> = ({ onModalStateChange, onLogout }) => {
   const [activeSubScreen, setActiveSubScreen] = useState<string | null>(null);
   const [profileKey, setProfileKey] = useState(0);
 
@@ -194,8 +196,19 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onModalStateChange }) =
             return <ChangeLanguageScreen onBack={handleBack} />;
         case 'brand':
             return <BrandGuideScreen onBack={handleBack} />;
+        case 'privacy':
+            return <PrivacyPolicyScreen onBack={handleBack} />;
+        case 'helpCenter':
+            return <HelpCenterScreen onBack={handleBack} />;
         default:
-            return <MainSettings key={profileKey} onNavigate={setActiveSubScreen} onModalStateChange={onModalStateChange} />;
+            return (
+              <MainSettings
+                key={profileKey}
+                onNavigate={setActiveSubScreen}
+                onModalStateChange={onModalStateChange}
+                onLogout={onLogout}
+              />
+            );
     }
   };
 

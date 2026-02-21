@@ -58,6 +58,8 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ orders, onModalStateC
     const { insights, isLoadingInsights, error, refreshInsights } = useInsights();
     const { t } = useLanguage();
 
+    const storeName = localStorage.getItem('dukan-store-name') || '';
+
     useEffect(() => {
         onModalStateChange(isUploadMenuOpen);
     }, [isUploadMenuOpen, onModalStateChange]);
@@ -93,7 +95,17 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ orders, onModalStateC
     <div>
       <header className="sticky top-0 z-10 flex items-center justify-between bg-gradient-to-b from-[#1A1A1A] to-black p-4 pb-2">
         <div className="w-12"></div>
-        <h1 className="flex-1 text-center text-xl font-bold tracking-tight text-white">{t('dashboard_title')}</h1>
+        <div className="flex flex-1 flex-col items-center gap-0.5">
+          <h1 className="text-xl font-bold tracking-tight text-white">
+            {storeName || t('dashboard_title')}
+          </h1>
+          {storeName && (
+            <span className="mt-0.5 flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 border border-emerald-500/20 text-[10px] font-bold tracking-wider text-emerald-400 uppercase shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+              <span className="material-symbols-outlined" style={{ fontSize: '13px', lineHeight: 1 }}>storefront</span>
+              powered by dukaan.ai
+            </span>
+          )}
+        </div>
         <div className="flex w-12 items-center justify-end">
           <button onClick={toggleUploadMenu} className="flex h-12 w-12 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-[#E6E6FA] text-black">
             <span className="material-symbols-outlined text-3xl">add</span>

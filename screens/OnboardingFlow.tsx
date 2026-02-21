@@ -102,6 +102,7 @@ const StoreDetailsStep: React.FC<{ onNext: (details: { storeName: string; storeA
               <option className="bg-[#1A1A1A] text-white" value="Grocery">Grocery / Kirana</option>
               <option className="bg-[#1A1A1A] text-white" value="Salon">Salon / Spa</option>
               <option className="bg-[#1A1A1A] text-white" value="Restaurant">Restaurant / Cafe</option>
+              <option className="bg-[#1A1A1A] text-white" value="Chemist">Chemist / Pharmacy</option>
               <option className="bg-[#1A1A1A] text-white" value="Other">Other</option>
             </select>
           </div>

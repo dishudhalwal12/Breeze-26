@@ -181,9 +181,12 @@ const NewOrderModal: React.FC<NewOrderModalProps> = ({ isOpen, order, onUpdateSt
         aria-modal="true"
         aria-labelledby="new-order-title"
       >
-        <div className="absolute top-0 left-0 w-full h-1 bg-[#2D2D2D] rounded-t-2xl overflow-hidden">
-            <div 
-                className="h-full bg-white transition-all duration-100 ease-linear"
+        {/* Timer bar — turns red in final 20% of countdown */}
+        <div className="absolute top-0 left-0 w-full h-1.5 bg-[#2D2D2D] rounded-t-2xl overflow-hidden">
+            <div
+                className={`h-full transition-all duration-100 ease-linear ${
+                    timeLeft < 120 ? 'bg-red-400' : 'bg-[#E6E6FA]'
+                }`}
                 style={{ width: `${(timeLeft / 600) * 100}%` }}
             />
         </div>
@@ -196,6 +199,10 @@ const NewOrderModal: React.FC<NewOrderModalProps> = ({ isOpen, order, onUpdateSt
                 </h3>
                 <p className="text-sm font-semibold text-neutral-400 truncate">{customerFirstName} &bull; {order.customer.address}</p>
               </div>
+              {/* Countdown in seconds */}
+              <span className={`text-xs font-bold tabular-nums shrink-0 mt-0.5 ${timeLeft < 120 ? 'text-red-400' : 'text-neutral-500'}`}>
+                {Math.ceil(timeLeft / 10)}s
+              </span>
             </div>
 
             <div className="space-y-3">
@@ -222,9 +229,10 @@ const NewOrderModal: React.FC<NewOrderModalProps> = ({ isOpen, order, onUpdateSt
                     <p className="font-bold text-2xl text-[#E6E6FA]">₹{order.total.toFixed(2)}</p>
                 </div>
 
-                <div className="pt-2">
-                  <div 
-                    ref={sliderRef} 
+                <div className="pt-2 space-y-3">
+                  {/* Swipe-to-accept slider */}
+                  <div
+                    ref={sliderRef}
                     className="relative w-full bg-[#2D2D2D] rounded-full h-14 flex items-center justify-center overflow-hidden select-none"
                   >
                     <p className={`text-neutral-300 font-semibold z-10 transition-opacity duration-200 pointer-events-none`}>
@@ -232,13 +240,20 @@ const NewOrderModal: React.FC<NewOrderModalProps> = ({ isOpen, order, onUpdateSt
                     </p>
                     <div
                       ref={handleRef}
-                      className={`absolute top-0 left-0 h-full w-14 bg-[#E6E6FA] rounded-full flex items-center justify-center z-20 cursor-grab active:cursor-grabbing`}
+                      className={`absolute top-0 left-0 h-full w-14 bg-[#E6E6FA] rounded-full flex items-center justify-center z-20 cursor-grab active:cursor-grabbing shadow-[0_0_16px_rgba(230,230,250,0.3)]`}
                       onMouseDown={handleSwipeStart}
                       onTouchStart={handleSwipeStart}
                     >
                       <span className="material-symbols-outlined text-black font-bold">chevron_right</span>
                     </div>
                   </div>
+                  {/* Decline button */}
+                  <button
+                    onClick={handleCloseAndReject}
+                    className="w-full py-3 text-sm font-semibold text-neutral-500 hover:text-red-400 active:text-red-400 transition-colors"
+                  >
+                    Decline Order
+                  </button>
                 </div>
             </div>
         </div>

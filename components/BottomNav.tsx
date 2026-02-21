@@ -41,7 +41,7 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, screen, isActive, onClic
 
 const BottomNav: React.FC<BottomNavProps> = ({ activeScreen, onNavigate, newOrderCount, tabs }) => {
   return (
-    <footer className="fixed bottom-0 left-0 right-0 z-10">
+    <footer className="fixed bottom-0 w-full max-w-[460px] mx-auto left-0 right-0 z-10">
       <div className="flex justify-around border-t border-[#2D2D2D] bg-[#1A1A1A] px-2 pt-2 pb-[calc(1rem+env(safe-area-inset-bottom))]">
         {tabs.map((tab) => (
           <NavItem
