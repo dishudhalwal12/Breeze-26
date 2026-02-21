@@ -17,7 +17,7 @@
 
 </div>
 
-## �🇳 The 60 Million MSME Problem
+## ��🇳 The 60 Million MSME Problem
 
 India has over **6 crore small businesses**. Yet, when a local pharmacy or a neighborhood salon seeks digital infrastructure, they are handed the exact same generic point-of-sale software designed for supermarkets.
 
@@ -39,7 +39,7 @@ Same codebase. Zero new deployments. Endless business possibilities.
 <br/>
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Magic%20Wand.png" width="40" />
+  <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/2728/512.gif" alt="✨" width="50" height="50" />
 </div>
 
 ### 🎯 Dynamic Schema Resolution (The "Wow" Moment)
@@ -135,7 +135,7 @@ npm run dev
 
 <br/>
 
-<img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Travel%20and%20places/Rocket.png" width="60" />
+<img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f680/512.gif" alt="🚀" width="70" height="70" />
 
 <br/>
 
