@@ -20,6 +20,8 @@ import Toast from './components/Toast.tsx';
 import AuthModal from './components/AuthModal.tsx';
 import { listenToAuthState } from './services/auth.ts';
 import { User } from 'firebase/auth';
+import { resolveTabsFromBusinessType, TabConfig } from './utils/tabResolver.ts';
+
 const AppContent: React.FC = () => {
   const [activeScreen, setActiveScreen] = useState<Screen>(Screen.DASHBOARD);
   const [orders, setOrders] = useState<Order[]>(() => {
@@ -61,6 +63,16 @@ const AppContent: React.FC = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const authChecked = useRef(false);
+
+  // Dynamic Tabs state
+  const [tabs, setTabs] = useState<TabConfig[]>([]);
+
+  // Resolve tabs once on mount and when onboarding completes
+  useEffect(() => {
+    const category = localStorage.getItem('dukan-store-category');
+    const aiContext = localStorage.getItem('dukan-business-intelligence-context');
+    setTabs(resolveTabsFromBusinessType(category, aiContext));
+  }, [showOnboarding]);
 
   // Listen to Auth State
   useEffect(() => {
@@ -268,7 +280,7 @@ const AppContent: React.FC = () => {
         <main className="pb-[calc(4rem+env(safe-area-inset-bottom))] h-full overflow-y-auto hide-scrollbar">
           {renderScreen()}
         </main>
-        <BottomNav activeScreen={activeScreen} onNavigate={handleNavigation} newOrderCount={newOrderCount} />
+        <BottomNav activeScreen={activeScreen} onNavigate={handleNavigation} newOrderCount={newOrderCount} tabs={tabs} />
          {newOrderForPopup && (
           <NewOrderModal 
             isOpen={!!newOrderForPopup} 

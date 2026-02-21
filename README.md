@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=timeGradient&height=200&section=header&text=Dukaan.AI&fontSize=70&animation=fadeIn&fontAlignY=35&desc=AI-Powered%20Business%20OS%20for%20Bharat&descAlignY=55&descAlign=45" />
+<img src="https://capsule-render.vercel.app/api?type=waving&color=timeGradient&height=250&section=header&text=Dukaan.AI%202.0&fontSize=70&animation=twinkling&fontAlignY=35&desc=Adaptive%20AI%20Business%20OS%20for%20Bharat&descAlignY=55&descAlign=50" />
 
-### AI-Powered Business Operating System for Bharat’s Local Stores
+### The App That _Becomes_ Your Business.
 
-**Local-first. AI-native. Cloud-optional.**
+**Built for Paradox Hacks 2026 | Powered by Gemini ✦ | Designed to Win**
 
 <br/>
 
@@ -12,187 +12,212 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![Google Gemini](https://img.shields.io/badge/Google_Gemini-8E75B2?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
-[![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com/)
+[![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
+
+---
+
+## 🏆 The Stakes: Paradox Hacks 2026
+
+<table>
+  <tr>
+    <td align="center">💰 <strong>Prize Pool</strong></td>
+    <td align="center">🎓 <strong>Masters' Union Degree</strong></td>
+    <td align="center">🥇 <strong>1st Place</strong></td>
+  </tr>
+  <tr>
+    <td align="center">Worth ₹5,00,000</td>
+    <td align="center">Worth ₹22.65L</td>
+    <td align="center">80% Scholarship</td>
+  </tr>
+</table>
+
+> Dukaan.AI 2.0 is built to demonstrate what the future of Indian MSME digitization looks like. **This is not a demo app. This is a thesis on adaptive AI infrastructure for Bharat.**
 
 </div>
 
 ---
 
-## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Symbols/Triangular%20Flag.png" alt="Flag" width="25" height="25" /> Problem
+## 🇮🇳 The Problem
 
-India has over **6+ crore small businesses**, yet most operate:
+India has **6+ crore small businesses**. Yet most operate:
 
-- <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Symbols/Cross%20Mark.png" alt="Cross" width="15" height="15" /> Without structured digital inventory
-- <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Symbols/Cross%20Mark.png" alt="Cross" width="15" height="15" /> Without analytics
-- <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Symbols/Cross%20Mark.png" alt="Cross" width="15" height="15" /> Without automation
-- <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Symbols/Cross%20Mark.png" alt="Cross" width="15" height="15" /> With heavy manual data entry
+- ❌ Without structured inventory
+- ❌ Without analytics
+- ❌ Without automation
+- ❌ Without personalization
+- ❌ Using generic tools built for the West
 
-Existing POS tools are:
+Existing POS systems assume:
 
-- Complex
-- English-heavy
-- Not built for Bharat
-- Not AI-native
+> _"Every business is the same."_
 
----
-
-## <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f4a1/512.gif" alt="Light Bulb" width="30" height="30" /> Solution — Dukaan.AI
-
-Dukaan.AI is a **local-first AI business operating system** that transforms small offline stores into intelligent, data-driven businesses.
-
-It removes friction by applying AI directly at the point of interaction — not as a separate analytics layer.
+They are not. A salon is not a grocery store. A pharmacy is not a restaurant. A bakery is not a kirana. **Yet software treats them identically.**
 
 ---
 
-## <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/26a1/512.gif" alt="High Voltage" width="30" height="30" /> Core Capabilities
+## ⚡ The Solution — Dukaan.AI 2.0
 
-### 1️⃣ AI-Powered Onboarding <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Rocket.png" alt="Rocket" width="25" height="25" />
+<div align="center">
+  <h3><strong>Adaptive AI Business Operating System</strong></h3>
+  <p>Same codebase. Different business identity.</p>
+  <code>Onboarding Context ➔ AI Reshapes Experience ➔ UI Adapts Visibly</code>
+</div>
 
-Instead of rigid forms, onboarding dynamically adapts using **Gemini 2.5 Flash**, generating structured business intelligence in real time.
+Instead of saying _"Here is a grocery template, adapt to it,"_ we built a system that says:
 
-- Business-type aware questions
-- Context-based prompts
-- Structured JSON output
-- Fallback-safe architecture
-
----
-
-### 2️⃣ Multi-Modal Data Ingestion <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Inbox%20Tray.png" alt="Inbox" width="25" height="25" />
-
-Manual entry is optional.
-
-Merchants can:
-
-- 📸 **Scan bills** via Gemini Vision
-- 💬 **Paste WhatsApp** order text
-- 📊 **Upload CSV** bulk data
-
-All unstructured input is normalized into clean JSON objects via AI + deterministic fallback logic.
-
-No backend required.
+> **"Tell us your business. The app adapts to you."**
 
 ---
 
-### 3️⃣ Inventory-Aware AI Insights <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Bar%20Chart.png" alt="Bar Chart" width="25" height="25" />
+## 🎯 Visible Adaptability (The Wow Moment)
 
-The system continuously analyzes:
+### 🛒 Grocery
 
-- Inventory stock
-- Sales patterns
-- Product velocity
+`Dashboard` | `Sales` | `Orders` | `Catalog` | `Settings`
 
-Gemini generates contextual, multilingual business advice in real time.
+### ✂️ Salon
 
-If AI fails → deterministic logic keeps app functional.
+`Dashboard` | `Sales` | **`Appointments`** | **`Services`** | `Settings`
 
----
+### 🍔 Restaurant
 
-### 4️⃣ Local-First Architecture <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Mobile%20Phone.png" alt="Mobile" width="25" height="25" />
+`Dashboard` | `Sales` | `Orders` | **`Menu`** | `Settings`
 
-Dukaan.AI works **100% offline** via `localStorage`.
+### 💊 Chemist
 
-Why?
+`Dashboard` | `Sales` | `Orders` | **`Medicines`** | `Settings`
 
-- No dependency on hackathon WiFi
-- Instant performance
-- Zero onboarding friction
-
-Cloud sync via **Firebase Firestore** is additive and optional.
-
-If cloud fails → local state remains intact.
+_AI-driven “Other” businesses dynamically resolve tab semantics. Same engine. Different UX. Instant business identity shift._
 
 ---
 
-### 5️⃣ Hybrid Cloud Sync <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Cloud.png" alt="Cloud" width="25" height="25" />
+## 🚀 Core Capabilities
 
-- Firestore integration (non-blocking)
-- Optional authentication
-- Future-ready multi-device architecture
-- Zero impact on demo stability
+<details open>
+<summary><b>1️⃣ AI-Powered Onboarding</b></summary>
+<br>
+Using <b>Gemini 2.5 Flash</b>, onboarding:
+<ul>
+  <li>Generates business-specific questions</li>
+  <li>Extracts operational pain points</li>
+  <li>Creates structured context</li>
+  <li>Enables adaptive UI</li>
+</ul>
+<i>If AI fails → deterministic fallback ensures zero downtime.</i>
+</details>
+
+<details open>
+<summary><b>2️⃣ Multi-Modal Data Ingestion</b></summary>
+<br>
+No manual-heavy setup required. Merchants can:
+<ul>
+  <li>📸 <b>Scan bills</b> (Gemini Vision OCR)</li>
+  <li>💬 <b>Paste WhatsApp orders</b></li>
+  <li>📊 <b>Upload CSV data</b></li>
+  <li>📝 <b>Manual entry</b></li>
+</ul>
+<i>All normalized into structured JSON instantly.</i>
+</details>
+
+<details open>
+<summary><b>3️⃣ Adaptive Navigation Layer</b></summary>
+<br>
+The bottom navigation dynamically changes based on business type, onboarding context, and AI interpretation. This creates instant, visible differentiation.
+</details>
+
+<details open>
+<summary><b>4️⃣ AI Business Intelligence</b></summary>
+<br>
+Gemini continuously analyzes:
+<ul>
+  <li>Stock velocity & Low inventory</li>
+  <li>Sales trends & Business seasonality</li>
+</ul>
+Generates contextual insights in real-time. <b>AI is advisory — never blocking.</b>
+</details>
+
+<details open>
+<summary><b>5️⃣ Order Lifecycle Engine</b></summary>
+<br>
+Simulated B2C workflow:
+<code>Order arrives ➔ Swipe to accept ➔ Stock deducts ➔ QR payment generated ➔ Order completed</code>
+<br><br>
+<i>All client-side. No server dependency. 100% Demo-safe.</i>
+</details>
 
 ---
 
-## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Building%20Construction.png" alt="Construction" width="25" height="25" /> Architecture Overview
+## 🏗 Architecture Philosophy
 
 ```mermaid
 graph TD;
-    UI[UI React + Tailwind] --> Context[Context Layer State Management];
-    Context --> Storage[(LocalStorage Primary Source of Truth)];
-    Storage --> AI[AI Service Layer Gemini];
-    AI --> Fallback{Deterministic Fallback Engine};
-    Fallback --> Sync[(Optional Firestore Sync)];
+    UI[React + Tailwind UI] --> State[Context API State Layer];
+    State --> Storage[(LocalStorage Primary Source)];
+    Storage --> AI[Gemini Service Layer];
+    AI --> Fallback{Deterministic Fallback};
 ```
 
-Key design principle:
+**Principle:**
+_AI enhances. AI never blocks. Core commerce logic must survive without internet._
 
-> **No AI call can block or crash core business functionality.**
+### 🔐 Hackathon Tradeoffs
 
----
+For maximum velocity and demo-safety:
 
-## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Smilies/Brain.png" alt="Brain" width="25" height="25" /> AI Integration Points
+- API keys client-exposed
+- No authentication enforced
+- No backend server / webhooks
 
-Gemini 2.5 Flash powers:
+### 🗺️ Production Roadmap
 
-- <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Symbols/Check%20Mark%20Button.png" alt="Check" width="20" height="20" /> Onboarding question generation
-- <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Symbols/Check%20Mark%20Button.png" alt="Check" width="20" height="20" /> Receipt OCR (Vision API)
-- <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Symbols/Check%20Mark%20Button.png" alt="Check" width="20" height="20" /> WhatsApp parsing
-- <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Symbols/Check%20Mark%20Button.png" alt="Check" width="20" height="20" /> CSV normalization
-- <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Symbols/Check%20Mark%20Button.png" alt="Check" width="20" height="20" /> Inventory insights
-
-All calls:
-
-- Enforced JSON structure
-- Wrapped in try/catch
-- Timeout controlled
-- Fail-safe fallback implemented
+- Move AI to serverless functions
+- Secure keys & enforce Auth
+- Add multi-device sync
+- Introduce event-driven architecture
 
 ---
 
-## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Wrench.png" alt="Wrench" width="25" height="25" /> Tech Stack
+## 🛠 Tech Stack
 
-| Domain               | Technology                                                 |
-| -------------------- | ---------------------------------------------------------- |
-| **Frontend**         | React 19, Vite, Strict TypeScript, Tailwind CSS            |
-| **State Management** | React Context API                                          |
-| **Persistence**      | LocalStorage (Primary), Firebase Firestore (Additive Sync) |
-| **AI Engine**        | `@google/genai`, Gemini 2.5 Flash                          |
-| **Deployment**       | GitHub Pages                                               |
-
----
-
-## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Locked%20with%20Key.png" alt="Lock" width="25" height="25" /> Security & Tradeoffs
-
-For hackathon velocity:
-
-- API keys are client-exposed
-- No auth requirement for demo
-
-Production roadmap:
-
-- Move AI calls to serverless functions
-- Secure keys server-side
-- Enforce authentication
-- Introduce schema validation
+| Layer           | Technology        |
+| :-------------- | :---------------- |
+| **Frontend**    | React 19 + Vite   |
+| **Language**    | Strict TypeScript |
+| **Styling**     | Tailwind CSS      |
+| **State**       | Context API       |
+| **Persistence** | localStorage      |
+| **AI**          | Gemini 2.5 Flash  |
+| **Hosting**     | GitHub Pages      |
 
 ---
 
-## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Travel%20and%20places/Rocket.png" alt="Rocket" width="25" height="25" /> Run Locally
+<div align="center">
+
+## 🧩 Why This Wins
+
+**Business-first thinking** • **AI visibly integrated** • **Multi-industry applicability** • **Zero backend risk** • **High demo reliability** • **Clear startup scalability narrative**
+
+<br>
+
+> _"Judges should feel: This isn’t just a hack. This is a product direction."_
+
+<br>
+
+## 🚀 Run Locally
 
 ```bash
-git clone https://github.com/dishudhalwal12/dukaan-ai.git
-cd dukaan-ai/in
+git clone https://github.com/dukan-ai/in.git
+cd in
 npm install
 
-# Add your environment variables:
-# VITE_GEMINI_API_KEY
-# VITE_FIREBASE_API_KEY
-# VITE_FIREBASE_PROJECT_ID
-# etc.
+# Add your API key to .env
+# VITE_GEMINI_API_KEY=your_key_here
 
 npm run dev
 ```
 
-<br>
-<div align="center">
-  <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Hand%20gestures/Handshake.png" alt="Handshake" width="60" height="60" />
+<img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Travel%20and%20places/Rocket.png" width="80" />
+
+### Built for Bharat. Built for MSMEs. Built to Win.
+
 </div>

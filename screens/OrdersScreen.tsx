@@ -3,12 +3,13 @@ import { Order, OrderStatus } from '../types.ts';
 import OrderDetailsModal from '../components/OrderDetailsModal.tsx';
 import Card from '../components/Card.tsx';
 import { useLanguage } from '../contexts/LanguageContext.tsx';
+import { useBusinessLabel } from '../hooks/useBusinessLabel.ts';
 
 const OrdersHeader: React.FC = () => {
-    const { t } = useLanguage();
+    const label = useBusinessLabel('ORDERS');
     return (
         <header className="flex items-center bg-gradient-to-b from-[#1A1A1A] to-black p-4 pb-2 justify-center sticky top-0 z-10">
-            <h1 className="text-white text-xl font-bold tracking-tight">{t('orders_title')}</h1>
+            <h1 className="text-white text-xl font-bold tracking-tight">{label}</h1>
         </header>
     );
 };

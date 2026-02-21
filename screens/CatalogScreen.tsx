@@ -8,12 +8,13 @@ import SupplierDetailsModal from '../components/SupplierDetailsModal.tsx';
 import UpstockMessageModal from '../components/UpstockMessageModal.tsx';
 import UnityModal from '../components/UnityModal.tsx';
 import { initialUnityDeals } from '../data/unityDeals.ts';
+import { useBusinessLabel } from '../hooks/useBusinessLabel.ts';
 
 const CatalogHeader: React.FC = () => {
-    const { t } = useLanguage();
+    const label = useBusinessLabel('CATALOG');
     return (
         <header className="flex items-center bg-gradient-to-b from-[#1A1A1A] to-black p-4 pb-2 justify-center sticky top-0 z-10">
-            <h1 className="text-white text-xl font-bold tracking-tight">{t('catalog_title')}</h1>
+            <h1 className="text-white text-xl font-bold tracking-tight">{label}</h1>
         </header>
     );
 };
