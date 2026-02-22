@@ -1,19 +1,6 @@
 
-import { GoogleGenAI } from "@google/genai";
 import { Product, Insight } from '../types.ts';
-
-let apiKey = 'dummy_key';
-try {
-  // @ts-ignore
-  if (import.meta.env && import.meta.env.VITE_GEMINI_API_KEY) {
-    // @ts-ignore
-    apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  }
-} catch (e) {
-  // Ignore fallback
-}
-
-const ai = new GoogleGenAI({ apiKey });
+import { withGeminiStreamFailover } from '../utils/geminiClient.ts';
 export async function* generateDynamicInsights(products: Product[], language: string): AsyncGenerator<Insight> {
   if (!products || products.length === 0) {
     yield { icon: 'add_shopping_cart', title: 'Add Your First Product', description: 'Add products to your catalog to start getting AI insights.' };
@@ -73,13 +60,15 @@ For the "icon" key, you MUST use one of these Material Symbols Outlined names: '
 Generate a mix of insights tailored specifically for a ${category} business. At least one should be a low-stock/low-availability alert if any item is running low (e.g. <=10). Think about combo deals, seasonal trends in India, service forecasts, or client engagement tips relevant to ${category}. Your advice MUST be practical.`;
 
   try {
-    const responseStream = await ai.models.generateContentStream({
-      model: "gemini-2.5-flash",
-      contents: `Here is the current inventory data: ${JSON.stringify(simplifiedProducts)}. Please generate 5 insights based on this data.`,
-      config: {
-        systemInstruction
-      },
-    });
+    const responseStream = await withGeminiStreamFailover((client) =>
+      client.models.generateContentStream({
+        model: "gemini-2.5-flash",
+        contents: `Here is the current inventory data: ${JSON.stringify(simplifiedProducts)}. Please generate 5 insights based on this data.`,
+        config: {
+          systemInstruction
+        },
+      })
+    );
 
     let buffer = '';
     for await (const chunk of responseStream) {

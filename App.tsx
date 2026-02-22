@@ -64,8 +64,6 @@ const AppContent: React.FC = () => {
   );
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // DEMO SHIELD: suppress order modal for 12s after mount/onboarding to block stale n8n replays
-  const [isModalSuppressed, setIsModalSuppressed] = useState(true);
   
   // Auth state
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -118,11 +116,9 @@ const AppContent: React.FC = () => {
     } catch (error) {
         console.error("Failed to check onboarding status from localStorage", error);
         setError("Failed to load onboarding status.");
+        // Fallback to showing onboarding if localStorage is inaccessible
         setShowOnboarding(true);
     }
-    // DEMO SHIELD: lift suppression after 12s from initial mount
-    const suppressTimer = setTimeout(() => setIsModalSuppressed(false), 12000);
-    return () => clearTimeout(suppressTimer);
   }, []);
 
   // Persist orders to localStorage whenever they change
@@ -180,11 +176,7 @@ const AppContent: React.FC = () => {
   };
 
   const handleAddOrders = useCallback((newOrders: Order[]) => {
-    setOrders(prev => {
-      const existingIds = new Set(prev.map(o => o.id));
-      const deduped = newOrders.filter(o => !existingIds.has(o.id));
-      return [...deduped, ...prev];
-    });
+    setOrders(prev => [...newOrders, ...prev]);
   }, []);
 
   // Keep refs in sync so polling closure always reads current values without being a dep
@@ -298,16 +290,12 @@ const AppContent: React.FC = () => {
 
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);
-    setInteractionDone(true);
+    setInteractionDone(true); // Start simulation engine after onboarding
 
     // Re-resolve tabs now that category is written to localStorage
     const category = localStorage.getItem('dukan-store-category');
     const aiContext = localStorage.getItem('dukan-business-intelligence-context');
     setTabs(resolveTabsFromBusinessType(category, aiContext));
-
-    // DEMO SHIELD: re-arm suppression for 12s after onboarding ends
-    setIsModalSuppressed(true);
-    setTimeout(() => setIsModalSuppressed(false), 12000);
 
     // Trigger auth check immediately post-onboarding
     if (!currentUser && !localStorage.getItem('dukan-guest-mode')) {
@@ -322,12 +310,9 @@ const AppContent: React.FC = () => {
 
   const handleLogout = useCallback(async () => {
     await signOutUser();
-    // Wipe all user-specific data so the next session starts completely fresh
-    const keysToRemove = Object.keys(localStorage).filter(
-      k => k.startsWith('dukan-') || k.startsWith('dukaan-')
-    );
-    keysToRemove.forEach(k => localStorage.removeItem(k));
-    window.location.reload();
+    localStorage.removeItem('dukan-guest-mode');
+    setCurrentUser(null);
+    setShowAuthModal(true);
   }, []);
 
   return (
@@ -338,7 +323,7 @@ const AppContent: React.FC = () => {
             {renderScreen()}
           </main>
           <BottomNav activeScreen={activeScreen} onNavigate={handleNavigation} newOrderCount={newOrderCount} tabs={tabs} />
-           {newOrderForPopup && !isModalSuppressed && (
+           {newOrderForPopup && (
             <NewOrderModal 
               isOpen={!!newOrderForPopup} 
               order={newOrderForPopup} 

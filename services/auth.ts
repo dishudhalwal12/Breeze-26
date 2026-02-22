@@ -10,23 +10,23 @@ import { app } from "../firebase";
 
 const auth = getAuth(app);
 
-export const signUpWithEmail = async (email: string, password: string): Promise<{ user: User | null; errorCode: string | null }> => {
+export const signUpWithEmail = async (email: string, password: string): Promise<User | null> => {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    return { user: userCredential.user, errorCode: null };
-  } catch (error: any) {
+    return userCredential.user;
+  } catch (error) {
     console.warn("Firebase Auth Error (SignUp):", error);
-    return { user: null, errorCode: error?.code ?? 'auth/unknown' };
+    return null;
   }
 };
 
-export const signInWithEmail = async (email: string, password: string): Promise<{ user: User | null; errorCode: string | null }> => {
+export const signInWithEmail = async (email: string, password: string): Promise<User | null> => {
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    return { user: userCredential.user, errorCode: null };
-  } catch (error: any) {
+    return userCredential.user;
+  } catch (error) {
     console.warn("Firebase Auth Error (SignIn):", error);
-    return { user: null, errorCode: error?.code ?? 'auth/unknown' };
+    return null;
   }
 };
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext.tsx';
-import { GoogleGenAI } from '@google/genai';
+import { withGeminiFailover } from '../utils/geminiClient.ts';
 import { saveBusinessProfileToCloud } from '../services/cloudSync.ts';
 import { businessPresets } from '../data/businessPresets.ts';
 
@@ -135,27 +135,21 @@ const BusinessContextStep: React.FC<{
     let mounted = true;
     const fetchGeminiData = async () => {
       try {
-        // @ts-ignore
-        const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-        if (!apiKey) throw new Error('No API key');
-
-        const ai = new GoogleGenAI({ apiKey });
-
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 1500);
 
         const userName = localStorage.getItem('dukan-profile-name') || 'the owner';
         const prompt = `You are a top-tier MBA business consultant. The user owns a '${details.storeCategory}' small business named '${details.storeName}' in India at '${details.storeAddress}'. The user's name is '${userName}'. Generate a dynamic onboarding questionnaire of 4 to 7 highly intelligent questions to deeply understand their specific business context. Include a mix of MCQ ('select') and subjective ('input') questions. Respond ONLY in strictly valid JSON format. Schema: {"questions": [{"type": "select" | "input", "title": "string (the question)", "options": ["string"] (required if select, max 5), "intent": "string (short key representing question intent)", "subtext": "string (optional)", "multiSelect": boolean (optional)}]}`;
 
-        const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: prompt,
-          config: {
-            responseMimeType: 'application/json',
-          },
-          // @ts-ignore
-          abortSignal: controller.signal
-        });
+        const response = await withGeminiFailover((client) =>
+          client.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+              responseMimeType: 'application/json',
+            },
+          })
+        );
 
         clearTimeout(timeoutId);
 
@@ -269,54 +263,126 @@ const BusinessContextStep: React.FC<{
     }
   };
 
+  // ─── Grocery item blocklist for schema validation ──────────────────────────
+  // Any AI-returned item whose name matches one of these substrings is rejected.
+  // This prevents Gemini's Kirana-biased training data from bleeding into
+  // non-grocery "Other" businesses (e.g. Fish Shop showing Amul Milk).
+  const GROCERY_BLOCKLIST = [
+    'maggi', 'amul', 'parle', 'tata salt', 'noodles', 'atta', 'maida',
+    'dal', 'chana', 'rice', 'chaval', 'oil', 'sunflower', 'mustard oil',
+    'biscuit', 'namkeen', 'poha', 'suji', 'sooji', 'besan', 'sugar',
+    'milk', 'ghee', 'butter', 'paneer', 'bread', 'eggs', 'aata',
+  ];
+
+  const isGroceryItem = (name: string): boolean => {
+    const lower = name.toLowerCase();
+    return GROCERY_BLOCKLIST.some(term => lower.includes(term));
+  };
+
+  const validateCatalogItem = (item: any): boolean => {
+    if (!item || typeof item.name !== 'string' || item.name.trim().length === 0) return false;
+    if (isGroceryItem(item.name)) return false;
+    if (typeof item.price !== 'number' || item.price <= 0) return false;
+    if (isNaN(parseInt(item.stock)) || parseInt(item.stock) <= 0) return false;
+    return true;
+  };
+
+  // ─── Neutral fallback (spec-defined) ──────────────────────────────────────
+  // Used when AI fails OR schema validation rejects the response.
+  // Never uses grocery items. Never uses initialProducts.
+  const NEUTRAL_FALLBACK = [
+    { name: 'Item 1', price: 100, stock: 10, unit: 'pcs' },
+    { name: 'Item 2', price: 150, stock: 10, unit: 'pcs' },
+    { name: 'Item 3', price: 200, stock: 10, unit: 'pcs' },
+    { name: 'Item 4', price: 250, stock: 10, unit: 'pcs' },
+  ];
+
   const generateOtherCatalogSeed = async (bizContext: string) => {
+    // Pre-write the neutral fallback immediately so ProductContext
+    // always has something safe to read — even if this function throws.
+    localStorage.setItem('dukaan-custom-catalog-seed', JSON.stringify(NEUTRAL_FALLBACK));
+
     try {
-      // @ts-ignore
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      if (!apiKey) return;
+      // ── Hardened prompt with grocery blocklist + one-shot example ──────────
+      // The example anchors Gemini to domain-specific items and away from its
+      // Kirana-biased defaults. The FORBIDDEN list is a last-resort instruction
+      // that fires even if the model ignores Rule 2.
+      const prompt = `You are generating a starter product catalog for a small Indian business.
 
-      const ai = new GoogleGenAI({ apiKey });
-      const prompt = `You are an AI configuring a retail inventory app for a small Indian business. The business type is: "${bizContext}". Generate exactly 6 realistic products or services this business sells in India. Use popular Indian brands where relevant (e.g. Amul, Patanjali, Himalaya, boAt, Parle). Keep product names concise and in English. Prices must be realistic Indian Rupees (number only, no symbol). Stock must be between 5 and 200. Give an appropriate unit (e.g., pcs, kgs, hrs, sessions, bottles). Finally, pick EXACTLY ONE Material Icon name that best represents this business (e.g. 'store', 'camera', 'fitness_center', 'pets', 'local_florist'). IMPORTANT: YOU MUST RETURN ONLY STRICT, VALID JSON. Schema: {"icon": "material_icon_name", "catalog": [{ "name": "string", "price": number, "stock": number, "unit": "string" }]}`;
+Business type: "${bizContext}"
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-        config: { responseMimeType: 'application/json' },
-      });
+RULES (follow all strictly):
+1. Every item must be directly sold or offered by this specific business type.
+2. FORBIDDEN: Maggi, Amul, Parle-G, atta, dal, rice, oil, milk, ghee, bread, biscuits, eggs, sugar, namkeen, poha. Do not include these under any circumstances.
+3. Do NOT use generic names like "Product 1" or "Item A".
+4. Return EXACTLY 5 items. No more, no less.
+5. Prices in Indian Rupees (number only, no ₹ symbol).
+6. Stock between 5 and 200.
+7. Return ONLY valid JSON. No markdown. No explanation.
+
+EXAMPLE — if business type is "Fish Shop":
+{ "catalog": [
+  { "name": "Rohu Fish", "price": 180, "stock": 30, "unit": "kg" },
+  { "name": "Catla Fish", "price": 220, "stock": 20, "unit": "kg" },
+  { "name": "Prawns (Medium)", "price": 350, "stock": 15, "unit": "kg" },
+  { "name": "Salmon Fillet", "price": 600, "stock": 10, "unit": "kg" },
+  { "name": "Fresh Tuna", "price": 450, "stock": 12, "unit": "kg" }
+]}
+
+Now generate for: "${bizContext}"
+
+Return format:
+{
+  "catalog": [
+    { "name": "string", "price": number, "stock": number, "unit": "pcs | kg | service" }
+  ]
+}`;
+
+      const response = await withGeminiFailover((client) =>
+        client.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: prompt,
+          config: { responseMimeType: 'application/json' },
+        })
+      );
 
       if (response.text) {
         let cleanText = response.text.trim();
         if (cleanText.startsWith('```json')) cleanText = cleanText.substring(7);
         if (cleanText.startsWith('```')) cleanText = cleanText.substring(3);
         if (cleanText.endsWith('```')) cleanText = cleanText.substring(0, cleanText.length - 3);
-        
-        const data = JSON.parse(cleanText);
-        if (data && typeof data.icon === 'string') {
-           const safeIcon = /^[a-z_]+$/.test(data.icon) ? data.icon : 'store';
-           localStorage.setItem('dukan-custom-tab-icon', safeIcon);
-        }
 
-        if (data && Array.isArray(data.catalog) && data.catalog.length > 0) {
-           const dynamicCatalog = data.catalog.map((item: any) => ({
-             name: item.name || 'Custom Item',
-             price: item.price || 100,
-             stock: parseInt(item.stock) || 10,
-             unit: item.unit || 'pos'
-           }));
-           localStorage.setItem('dukaan-custom-catalog-seed', JSON.stringify(dynamicCatalog));
-           return;
+        const data = JSON.parse(cleanText);
+
+        if (data && Array.isArray(data.catalog)) {
+          // ── Schema validation: reject grocery-contaminated items ──────────
+          const validItems = data.catalog.filter(validateCatalogItem);
+
+          // Require at least 3 valid items — otherwise the whole response
+          // is considered a hallucination and we fall through to the fallback.
+          if (validItems.length >= 3) {
+            const dynamicCatalog = validItems.map((item: any) => ({
+              name: String(item.name).trim(),
+              price: Number(item.price),
+              stock: parseInt(String(item.stock)),
+              unit: String(item.unit || 'pcs'),
+            }));
+            // Write validated seed and mark as AI-verified
+            localStorage.setItem('dukaan-custom-catalog-seed', JSON.stringify(dynamicCatalog));
+            localStorage.setItem('dukaan-other-ai-seed-done', 'true');
+            return;
+          }
+          // Fewer than 3 valid items → fallback already written above, just return
+          console.warn('[CatalogSeed] AI response failed schema validation — using neutral fallback');
+          return;
         }
       }
     } catch (e) {
-      console.warn("Dynamic catalog generation failed", e);
+      console.warn('[CatalogSeed] Gemini call failed — using neutral fallback', e);
+      // Neutral fallback was already pre-written at the top of this function
     }
-    
-    // Fallback if fails
-    localStorage.setItem('dukan-custom-tab-icon', 'store');
-    localStorage.setItem('dukaan-custom-catalog-seed', JSON.stringify([
-      { name: "Service/Item 1", price: 100, stock: 10, unit: "unit" }
-    ]));
   };
+
 
   const handleNext = async () => {
     const finalSelection = currentQ?.type === 'input' 

@@ -1,21 +1,9 @@
-import { GoogleGenAI } from "@google/genai";
+
 import Papa from 'papaparse';
 import { Order, OrderItem, OrderStatus } from '../types.ts';
 import { ruleBasedWhatsAppParser } from '../utils/parsers.ts';
 import { generateRandomPhoneNumber } from '../utils/phone.ts';
-
-let apiKey = 'dummy_key';
-try {
-  // @ts-ignore
-  if (import.meta.env && import.meta.env.VITE_GEMINI_API_KEY) {
-    // @ts-ignore
-    apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  }
-} catch (e) {
-  // Ignore fallback
-}
-
-const ai = new GoogleGenAI({ apiKey });
+import { withGeminiFailover } from '../utils/geminiClient.ts';
 
 // Helper to convert an uploaded File to base64
 // This is required for inlineData parameter in @google/genai API
@@ -62,17 +50,19 @@ const callGeminiWithTimeout = async (prompt: string, timeoutMs: number = 3000): 
   const systemInstruction = `You are a data extraction assistant. Extract shopping receipt items from the provided text.
 Return ONLY a valid JSON array of objects. No markdown. Each object must have "name" (string), "quantity" (number), and "price" (string).`;
 
-  const fetchPromise = ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: prompt,
-    config: {
-      systemInstruction,
-      responseMimeType: "application/json"
-    }
-  });
-
   const timeoutPromise = new Promise<never>((_, reject) =>
     setTimeout(() => reject(new Error('Gemini API timeout')), timeoutMs)
+  );
+
+  const fetchPromise = withGeminiFailover((client) =>
+    client.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        systemInstruction,
+        responseMimeType: "application/json"
+      }
+    })
   );
 
   const response = await Promise.race([fetchPromise, timeoutPromise]);
@@ -99,22 +89,24 @@ Return ONLY a valid JSON array of objects. Do not include markdown or \`\`\`json
 Each object in the array must have ONLY these three keys:
 "name" (string name of product), "quantity" (numeric quantity), and "price" (string price).`;
 
-    const fetchPromise = ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: [
-        {
-          inlineData: {
-            data: base64Data,
-            mimeType: mimeType
-          }
-        },
-        "Extract structured JSON items from this receipt."
-      ],
-      config: {
-        systemInstruction,
-        responseMimeType: "application/json"
-      }
-    });
+    const fetchPromise = withGeminiFailover((client) =>
+      client.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [
+          {
+            inlineData: {
+              data: base64Data,
+              mimeType: mimeType
+            }
+          },
+          "Extract structured JSON items from this receipt."
+        ],
+        config: {
+          systemInstruction,
+          responseMimeType: "application/json"
+        }
+      })
+    );
   
     const timeoutPromise = new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error('Gemini Vision API timeout')), timeoutMs)
@@ -234,14 +226,16 @@ Each item within "items" MUST have "productId", "name" (string), "quantity" (num
               setTimeout(() => rej(new Error('Gemini API timeout')), 3000)
             );
 
-            const fetchPromise = ai.models.generateContent({
+            const fetchPromise = withGeminiFailover((client) =>
+              client.models.generateContent({
                 model: "gemini-2.5-flash",
                 contents: `Normalize these orders: ${rawJsonString}`,
                 config: {
-                    systemInstruction,
-                    responseMimeType: "application/json"
+                  systemInstruction,
+                  responseMimeType: "application/json"
                 }
-            });
+              })
+            );
 
             const response = await Promise.race([fetchPromise, timeoutPromise]);
             const text = (response as any).text.trim();

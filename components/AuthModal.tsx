@@ -13,20 +13,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const getErrorMessage = (code: string | null, isSignUp: boolean): string => {
-    switch (code) {
-      case 'auth/user-not-found': return 'No account found with this email.';
-      case 'auth/wrong-password': return 'Incorrect password. Please try again.';
-      case 'auth/email-already-in-use': return 'An account with this email already exists.';
-      case 'auth/weak-password': return 'Password must be at least 6 characters.';
-      case 'auth/invalid-email': return 'Please enter a valid email address.';
-      case 'auth/too-many-requests': return 'Too many attempts. Please try again later.';
-      case 'auth/network-request-failed': return 'Network error. Check your connection.';
-      case 'auth/invalid-credential': return 'Invalid email or password.';
-      default: return isSignUp ? 'Failed to create account. Please try again.' : 'Sign in failed. Please try again.';
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
@@ -37,14 +23,21 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess }) => {
     setLoading(true);
     setError(null);
 
-    const result = isSignUp
-      ? await signUpWithEmail(email, password)
-      : await signInWithEmail(email, password);
+    let user = null;
+    if (isSignUp) {
+      user = await signUpWithEmail(email, password);
+    } else {
+      user = await signInWithEmail(email, password);
+    }
 
-    if (result.user) {
+    if (user) {
       onSuccess();
     } else {
-      setError(getErrorMessage(result.errorCode, isSignUp));
+      setError(
+        isSignUp 
+          ? "Failed to create account. Please try again." 
+          : "Invalid email or password. Please try again."
+      );
       setLoading(false);
     }
   };
