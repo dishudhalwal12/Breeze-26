@@ -98,8 +98,9 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
             localStorage.setItem('dukan-products', JSON.stringify(products));
         } catch (error) {
              if (error instanceof DOMException && (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
-                console.error("LocalStorage quota exceeded. Cannot save products.");
-                alert("Error: Your device storage is full. Cannot save new product data. Please try removing some older products or images.");
+                // BUG-3 fix: surface via error state (shown by Toast) instead of blocking alert()
+                setError('Storage is full. Remove some products or images to free up space.');
+                console.error('LocalStorage quota exceeded. Cannot save products.');
             } else {
                 console.error("Failed to save products to localStorage", error);
             }

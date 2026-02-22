@@ -48,16 +48,17 @@ const TimeAgo: React.FC<{ timestamp: string }> = ({ timestamp }) => {
   return <span className="text-neutral-400 text-xs text-right">{formattedTime}</span>;
 };
 
-const OrderStatusChip: React.FC<{ status: OrderStatus }> = ({ status }) => {
-    const styles = {
+export const OrderStatusChip: React.FC<{ status: OrderStatus }> = ({ status }) => {
+    const styles: Record<string, string> = {
         [OrderStatus.NEW]: 'bg-blue-500/20 text-blue-300',
         [OrderStatus.PREPARING]: 'bg-yellow-500/20 text-yellow-300',
         [OrderStatus.READY_FOR_PICKUP]: 'bg-purple-500/20 text-purple-300',
         [OrderStatus.COMPLETED]: 'bg-green-500/20 text-green-300',
         [OrderStatus.REJECTED]: 'bg-red-500/20 text-red-300',
+        [OrderStatus.CANCELLED]: 'bg-neutral-500/20 text-neutral-400',
     };
     return (
-        <div className={`px-2 py-0.5 text-xs font-semibold rounded-full ${styles[status]}`}>
+        <div className={`px-2 py-0.5 text-xs font-semibold rounded-full ${styles[status] ?? 'bg-neutral-500/20 text-neutral-400'}`}>
             {status.replace('_', ' ')}
         </div>
     );

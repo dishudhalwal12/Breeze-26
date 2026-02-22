@@ -260,10 +260,13 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ isOpen, onClose, 
                         <p className="text-sm text-neutral-400">Customer</p>
                         <p className="font-bold text-white mt-1">{order.customer?.name ?? 'Walk-in Customer'}</p>
                         <p className="text-sm text-neutral-300">{order.customer?.address ?? '—'}</p>
-                        <a href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-2 bg-[#25D366] text-white text-sm font-bold py-1.5 px-3 rounded-full hover:bg-opacity-90">
-                            <WhatsAppIcon className="w-4 h-4" />
-                            Chat on WhatsApp
-                        </a>
+                        {/* BUG-9: only show WhatsApp link when a number exists */}
+                        {order.customer?.whatsappNumber?.replace(/[^0-9]/g, '') && (
+                            <a href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-2 bg-[#25D366] text-white text-sm font-bold py-1.5 px-3 rounded-full hover:bg-opacity-90">
+                                <WhatsAppIcon className="w-4 h-4" />
+                                Chat on WhatsApp
+                            </a>
+                        )}
                     </div>
 
                     {/* Items List */}

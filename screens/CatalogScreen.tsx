@@ -9,6 +9,7 @@ import UpstockMessageModal from '../components/UpstockMessageModal.tsx';
 import UnityModal from '../components/UnityModal.tsx';
 import { initialUnityDeals } from '../data/unityDeals.ts';
 import { useBusinessLabel } from '../hooks/useBusinessLabel.ts';
+import Toast from '../components/Toast.tsx';
 
 const CatalogHeader: React.FC = () => {
     const label = useBusinessLabel('CATALOG');
@@ -83,7 +84,7 @@ const ProductCard: React.FC<{ product: Product; onEdit: () => void, onDelete: ()
             <div className="flex-1">
                 <p className="font-bold text-white">{t(product.name)}</p>
                 <p className="text-sm text-neutral-400">{product.price}</p>
-                <p className={`text-sm font-semibold ${product.stock < 10 ? 'text-red-400' : product.stock > 10 ? 'text-green-400' : 'text-neutral-300'}`}>
+                <p className={`text-sm font-semibold ${product.stock <= 10 ? 'text-red-400' : 'text-green-400'}`}>
                     Stock: {product.stock} {product.stockUnit}
                 </p>
             </div>
@@ -118,6 +119,10 @@ const CatalogScreen: React.FC<CatalogScreenProps> = ({ onModalStateChange }) => 
     const [searchQuery, setSearchQuery] = useState('');
     const { products, loading, deleteProduct } = useProducts();
     const { t } = useLanguage();
+    // In-app confirmation state (replaces window.confirm)
+    const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+    // Low-stock alert toast state (replaces window.alert)
+    const [lowStockToast, setLowStockToast] = useState<string | null>(null);
 
     // Modals for Upstock Flow
     const [isStoreNameModalOpen, setIsStoreNameModalOpen] = useState(false);
@@ -126,9 +131,11 @@ const CatalogScreen: React.FC<CatalogScreenProps> = ({ onModalStateChange }) => 
     const [upstockMessage, setUpstockMessage] = useState('');
     const [whatsappUrl, setWhatsappUrl] = useState('');
 
-    // --- State for Unity Deals ---
+    // --- State for Unity Deals (BUG-7: persisted to localStorage) ---
     const [unityDeals, setUnityDeals] = useState<UnityDeal[]>(() => JSON.parse(JSON.stringify(initialUnityDeals)));
-    const [joinedUnityDeals, setJoinedUnityDeals] = useState<Record<string, number>>({}); // {[dealId]: quantity}
+    const [joinedUnityDeals, setJoinedUnityDeals] = useState<Record<string, number>>(() => {
+        try { return JSON.parse(localStorage.getItem('dukan-unity-joined') ?? '{}'); } catch { return {}; }
+    });
 
     const filteredProducts = useMemo(() => {
         return products.filter(p => t(p.name).toLowerCase().includes(searchQuery.toLowerCase()));
@@ -150,15 +157,22 @@ const CatalogScreen: React.FC<CatalogScreenProps> = ({ onModalStateChange }) => 
     };
 
     const handleDeleteProduct = (productId: string) => {
-        if (window.confirm('Are you sure you want to delete this product?')) {
-            deleteProduct(productId);
+        // BUG-3 fix: use in-app confirm state instead of window.confirm
+        setConfirmDeleteId(productId);
+    };
+
+    const handleConfirmDelete = () => {
+        if (confirmDeleteId) {
+            deleteProduct(confirmDeleteId);
+            setConfirmDeleteId(null);
         }
     };
     
     const handleUpstockClick = () => {
-        const lowStockItems = products.filter(p => p.stock < 10);
+        const lowStockItems = products.filter(p => p.stock <= 10);
         if (lowStockItems.length === 0) {
-            alert("No items are currently low on stock (less than 10 units).");
+            // BUG-3 fix: use in-app Toast instead of window.alert
+            setLowStockToast('All items have sufficient stock (above 10 units).');
             return;
         }
 
@@ -177,7 +191,6 @@ const CatalogScreen: React.FC<CatalogScreenProps> = ({ onModalStateChange }) => 
      const handleJoinUnityDeal = (dealId: string, quantity: number) => {
         const isFirstJoin = !joinedUnityDeals[dealId];
 
-        // Update the main deals list with new progress
         setUnityDeals(currentDeals => currentDeals.map(d => {
             if (d.id === dealId) {
                 return {
@@ -189,11 +202,10 @@ const CatalogScreen: React.FC<CatalogScreenProps> = ({ onModalStateChange }) => 
             return d;
         }));
         
-        // Update the user's joined list
-        setJoinedUnityDeals(prev => ({
-            ...prev,
-            [dealId]: (prev[dealId] || 0) + quantity
-        }));
+        const updated = { ...joinedUnityDeals, [dealId]: (joinedUnityDeals[dealId] || 0) + quantity };
+        setJoinedUnityDeals(updated);
+        // BUG-7 fix: persist to localStorage so navigation doesn't reset progress
+        localStorage.setItem('dukan-unity-joined', JSON.stringify(updated));
     };
 
     const handleStoreNameSaved = () => {
@@ -298,6 +310,19 @@ const CatalogScreen: React.FC<CatalogScreenProps> = ({ onModalStateChange }) => 
                 joinedDeals={joinedUnityDeals}
                 onJoinDeal={handleJoinUnityDeal}
             />
+            {/* BUG-3: In-app delete confirmation (replaces window.confirm) */}
+            {confirmDeleteId && (
+                <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/60 backdrop-blur-sm">
+                    <div className="w-full max-w-[460px] bg-[#1A1A1A] rounded-t-2xl p-6 space-y-3">
+                        <p className="text-white font-bold text-center">Delete this product?</p>
+                        <p className="text-neutral-400 text-sm text-center">This action cannot be undone.</p>
+                        <button onClick={handleConfirmDelete} className="w-full py-3 bg-red-500 text-white font-bold rounded-xl">Delete</button>
+                        <button onClick={() => setConfirmDeleteId(null)} className="w-full py-3 text-neutral-400 font-semibold">Cancel</button>
+                    </div>
+                </div>
+            )}
+            {/* BUG-3: In-app toast for low-stock check */}
+            {lowStockToast && <Toast message={lowStockToast} onClose={() => setLowStockToast(null)} />}
         </div>
     );
 };

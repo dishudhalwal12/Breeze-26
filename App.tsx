@@ -176,7 +176,11 @@ const AppContent: React.FC = () => {
   };
 
   const handleAddOrders = useCallback((newOrders: Order[]) => {
-    setOrders(prev => [...newOrders, ...prev]);
+    setOrders(prev => {
+      const existingIds = new Set(prev.map(o => o.id));
+      const deduped = newOrders.filter(o => !existingIds.has(o.id));
+      return [...deduped, ...prev];
+    });
   }, []);
 
   // Keep refs in sync so polling closure always reads current values without being a dep
@@ -310,9 +314,12 @@ const AppContent: React.FC = () => {
 
   const handleLogout = useCallback(async () => {
     await signOutUser();
-    localStorage.removeItem('dukan-guest-mode');
-    setCurrentUser(null);
-    setShowAuthModal(true);
+    // Wipe all user-specific data so the next session starts completely fresh
+    const keysToRemove = Object.keys(localStorage).filter(
+      k => k.startsWith('dukan-') || k.startsWith('dukaan-')
+    );
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+    window.location.reload();
   }, []);
 
   return (

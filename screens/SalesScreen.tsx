@@ -100,7 +100,10 @@ const SalesChart: React.FC<{ data: { label: string; value: number }[] }> = ({ da
     const maxValue = Math.max(...data.map(d => d.value), 1000) * 1.1; // Add 10% buffer, min value of 1000
     const minValue = 0;
 
-    const xScale = (index: number) => padding.left + (index / (data.length - 1)) * chartWidth;
+    const xScale = (index: number) =>
+      data.length === 1
+        ? padding.left + chartWidth / 2           // center single point
+        : padding.left + (index / (data.length - 1)) * chartWidth;
     const yScale = (value: number) => height - padding.bottom - ((value - minValue) / (maxValue - minValue)) * chartHeight;
 
     const pathData = data.map((point, i) => {
