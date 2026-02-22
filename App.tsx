@@ -57,6 +57,11 @@ const AppContent: React.FC = () => {
   // Simulation refs removed for Webhook Polling
   const activeScreenRef = useRef<Screen>(Screen.DASHBOARD);
   const isOtherModalShowingRef = useRef(false);
+  // Persisted set of order IDs for which the modal has already been shown.
+  // Survives page refreshes so the same order never pops up twice.
+  const seenOrderIds = useRef<Set<string>>(
+    new Set(JSON.parse(localStorage.getItem('dukan-seen-order-ids') ?? '[]') as string[])
+  );
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -231,11 +236,18 @@ const AppContent: React.FC = () => {
 
         const fetchedOrder = normalizeWebhookOrder(rawOrder as Record<string, unknown>);
 
+        // Guard: already shown the modal for this order (survives refresh via localStorage)
+        if (seenOrderIds.current.has(fetchedOrder.id)) return;
+
         setOrders(prevOrders => {
           // Check for duplicate injection using authoritative ID
           if (prevOrders.some(o => o.id === fetchedOrder.id)) {
             return prevOrders;
           }
+
+          // Mark as seen — persist immediately so a refresh can't re-trigger the modal
+          seenOrderIds.current.add(fetchedOrder.id);
+          localStorage.setItem('dukan-seen-order-ids', JSON.stringify([...seenOrderIds.current]));
 
           // It's a new order — read current screen/modal state from refs (no stale closure)
           if (activeScreenRef.current === Screen.SETTINGS || isOtherModalShowingRef.current) {
@@ -254,7 +266,8 @@ const AppContent: React.FC = () => {
       }
     };
 
-    const intervalId = setInterval(pollWebhook, 30000);
+    pollWebhook(); // immediate first check — no waiting for first tick
+    const intervalId = setInterval(pollWebhook, 3000); // poll every 3 s
     return () => clearInterval(intervalId);
   }, [isInteractionDone]); // Stable: interval created once, never torn down on navigation
 
