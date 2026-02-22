@@ -2,7 +2,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import DashboardScreen from './screens/DashboardScreen.tsx';
 import BottomNav from './components/BottomNav.tsx';
-import { Screen, Order, OrderStatus, Product, Customer } from './types.ts';
+import { Screen, Order, OrderStatus, OrderItem, Product, Customer } from './types.ts';
 import SalesScreen from './screens/SalesScreen.tsx';
 import InsightsScreen from './screens/InsightsScreen.tsx';
 import CatalogScreen from './screens/CatalogScreen.tsx';
@@ -54,9 +54,9 @@ const AppContent: React.FC = () => {
   const [isInteractionDone, setInteractionDone] = useState(false);
   const [isOtherModalShowing, setIsOtherModalShowing] = useState(false);
   const { products, updateProduct } = useProducts();
-  const timeoutRef = useRef<number | null>(null);
-  const isSimulatingRef = useRef(false); // To prevent multiple simulation timeouts
-  const isFirstOrderRef = useRef(true);  // First order uses a shorter delay (12-18s)
+  // Simulation refs removed for Webhook Polling
+  const activeScreenRef = useRef<Screen>(Screen.DASHBOARD);
+  const isOtherModalShowingRef = useRef(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -95,15 +95,18 @@ const AppContent: React.FC = () => {
         const onboardingComplete = localStorage.getItem('dukan-onboarding-complete');
         if (onboardingComplete !== 'true') {
             setShowOnboarding(true);
-        } else if (!authChecked.current && !localStorage.getItem('dukan-guest-mode')) {
-            // Onboarding is complete. If we haven't checked auth yet, do it now.
-            authChecked.current = true;
-            // A slight delay ensures dashboard paints fully before the modal overlays
-            setTimeout(() => {
-                if (!currentUser) {
-                    setShowAuthModal(true);
-                }
-            }, 1000);
+        } else {
+            setInteractionDone(true); // Returning users: start webhook polling immediately on mount
+            if (!authChecked.current && !localStorage.getItem('dukan-guest-mode')) {
+                // Onboarding is complete. If we haven't checked auth yet, do it now.
+                authChecked.current = true;
+                // A slight delay ensures dashboard paints fully before the modal overlays
+                setTimeout(() => {
+                    if (!currentUser) {
+                        setShowAuthModal(true);
+                    }
+                }, 1000);
+            }
         }
     } catch (error) {
         console.error("Failed to check onboarding status from localStorage", error);
@@ -171,83 +174,89 @@ const AppContent: React.FC = () => {
     setOrders(prev => [...newOrders, ...prev]);
   }, []);
 
-  const generateRandomOrder = useCallback(() => {
-    if (!isInteractionDone || products.length === 0) {
-      return;
-    }
+  // Keep refs in sync so polling closure always reads current values without being a dep
+  useEffect(() => { activeScreenRef.current = activeScreen; }, [activeScreen]);
+  useEffect(() => { isOtherModalShowingRef.current = isOtherModalShowing; }, [isOtherModalShowing]);
 
-    // Pick a random customer
-    const randomCustomer = mockCustomers[Math.floor(Math.random() * mockCustomers.length)];
-    
-    // Pick 1 to 3 random products
-    const orderItems = [];
-    const numItems = Math.floor(Math.random() * 3) + 1;
-    const availableProducts = [...products].filter(p => p.stock > 0);
-    
-    for (let i = 0; i < numItems && availableProducts.length > 0; i++) {
-        const randomIndex = Math.floor(Math.random() * availableProducts.length);
-        const product = availableProducts.splice(randomIndex, 1)[0];
-        orderItems.push({
-            productId: product.id,
-            name: product.name,
-            quantity: 1, // Keep quantity simple
-            price: product.price,
-        });
-    }
-
-    if (orderItems.length === 0) return;
-
-    const total = orderItems.reduce((acc, item) => acc + parseFloat(item.price.replace('₹', '')) * item.quantity, 0);
-
-    const newOrder: Order = {
-      id: `B2C-${Math.floor(1000 + Math.random() * 9000)}`,
-      customer: { ...randomCustomer, whatsappNumber: generateRandomPhoneNumber() },
-      items: orderItems,
-      total: total,
-      paymentMethod: Math.random() > 0.5 ? 'COD' : 'UPI',
-      status: OrderStatus.NEW,
-      timestamp: new Date().toISOString(),
-    };
-    
-    setOrders(prevOrders => [newOrder, ...prevOrders]);
-
-    if (activeScreen === Screen.SETTINGS || isOtherModalShowing) {
-        console.log('New order generated, but popup suppressed due to active screen or another modal being open.');
-        return;
-    }
-    
-    setNewOrderForPopup(newOrder);
-  }, [isInteractionDone, products, activeScreen, isOtherModalShowing, updateProduct]);
-  
-  const runOrderSimulation = useCallback(() => {
-    if (!isInteractionDone || products.length === 0 || newOrderForPopup) {
-      isSimulatingRef.current = false;
-      return;
-    }
-
-    isSimulatingRef.current = true;
-
-    // First order: 12–18 s after onboarding. Subsequent orders: 25–30 s apart.
-    const minMs = isFirstOrderRef.current ? 12000 : 25000;
-    const maxMs = isFirstOrderRef.current ? 18000 : 30000;
-    const randomInterval = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
-
-    if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-    }
-
-    timeoutRef.current = window.setTimeout(() => {
-        isFirstOrderRef.current = false; // Mark first trigger done before generating
-        generateRandomOrder();
-        isSimulatingRef.current = false; // Allow next simulation to be scheduled
-    }, randomInterval);
-  }, [isInteractionDone, products, newOrderForPopup, generateRandomOrder]);
-
+  // Poll n8n webhook for real orders — stable interval, never recreated on navigation
   useEffect(() => {
-    if (isInteractionDone && !isSimulatingRef.current) {
-      runOrderSimulation();
-    }
-  }, [isInteractionDone, runOrderSimulation, newOrderForPopup]);
+    if (!isInteractionDone) return;
+
+    // Normalize a raw webhook payload so every required field is present
+    // (the webhook may omit `total`, use bare numeric prices, etc.)
+    const normalizeWebhookOrder = (raw: Record<string, unknown>): Order => {
+      // Normalize items first — price may arrive as number 14 or string "₹14"
+      const rawItems = Array.isArray(raw.items) ? raw.items as Array<Record<string, unknown>> : [];
+      const items: OrderItem[] = rawItems.map(item => {
+        const rawPrice = item.price ?? 0;
+        // Ensure price is always a "₹XX" formatted string
+        const priceNum = typeof rawPrice === 'number' ? rawPrice : parseFloat(String(rawPrice).replace('₹', '') || '0');
+        const price = `₹${priceNum}`;
+        return {
+          productId: String(item.productId ?? ''),
+          name: String(item.name ?? 'Item'),
+          quantity: Number(item.quantity ?? 1),
+          price,
+        };
+      });
+
+      // Compute total from items if webhook doesn't send it (or sends 0/null)
+      const rawTotal = typeof raw.total === 'number' ? raw.total : parseFloat(String(raw.total ?? '0'));
+      const computedTotal = rawTotal > 0
+        ? rawTotal
+        : items.reduce((sum, item) => sum + item.quantity * parseFloat(item.price.replace('₹', '') || '0'), 0);
+
+      return {
+        id: String(raw.id ?? ''),
+        status: (raw.status as OrderStatus) ?? OrderStatus.NEW,
+        paymentMethod: (raw.paymentMethod as 'COD' | 'UPI') ?? 'COD',
+        total: computedTotal,
+        timestamp: String(raw.timestamp ?? new Date().toISOString()),
+        items,
+        customer: {
+          name: String((raw.customer as Record<string, unknown>)?.name ?? raw.customerName ?? 'Walk-in Customer'),
+          address: String((raw.customer as Record<string, unknown>)?.address ?? raw.address ?? '—'),
+          whatsappNumber: String((raw.customer as Record<string, unknown>)?.whatsappNumber ?? raw.phone ?? ''),
+        },
+      };
+    };
+
+    const pollWebhook = async () => {
+      try {
+        const response = await fetch('/webhook/latest-order');
+        if (!response.ok) return;
+
+        const rawOrder = await response.json();
+        if (!rawOrder || !rawOrder.id) return;
+
+        const fetchedOrder = normalizeWebhookOrder(rawOrder as Record<string, unknown>);
+
+        setOrders(prevOrders => {
+          // Check for duplicate injection using authoritative ID
+          if (prevOrders.some(o => o.id === fetchedOrder.id)) {
+            return prevOrders;
+          }
+
+          // It's a new order — read current screen/modal state from refs (no stale closure)
+          if (activeScreenRef.current === Screen.SETTINGS || isOtherModalShowingRef.current) {
+              console.log('New webhook order fetched, but popup suppressed due to active screen or another modal being open.');
+          } else {
+              // Trigger modal in the next tick to prevent stale state conflicts
+              setTimeout(() => {
+                  setNewOrderForPopup(fetchedOrder);
+              }, 0);
+          }
+
+          return [fetchedOrder, ...prevOrders];
+        });
+      } catch (err) {
+        // Silently ignore connection errors so app remains stable if n8n goes offline
+      }
+    };
+
+    const intervalId = setInterval(pollWebhook, 30000);
+    return () => clearInterval(intervalId);
+  }, [isInteractionDone]); // Stable: interval created once, never torn down on navigation
 
   const renderScreen = () => {
     switch (activeScreen) {

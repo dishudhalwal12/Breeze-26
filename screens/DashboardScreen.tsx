@@ -78,11 +78,11 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ orders, onModalStateC
         relevantOrders.forEach(order => {
             const orderDate = new Date(order.timestamp);
             if (isToday(orderDate)) {
-                today.sales += order.total;
+                today.sales += Number(order.total ?? 0) || 0;
                 today.orders += 1;
             }
             if (isThisMonth(orderDate)) {
-                thisMonth.sales += order.total;
+                thisMonth.sales += Number(order.total ?? 0) || 0;
                 thisMonth.orders += 1;
             }
         });

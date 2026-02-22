@@ -172,7 +172,8 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ isOpen, onClose, 
   if (!isOpen) return null;
 
   const getWhatsAppUrl = () => {
-      const number = order.customer.whatsappNumber.replace(/[^0-9]/g, '');
+      const number = (order.customer?.whatsappNumber ?? '').replace(/[^0-9]/g, '');
+      if (!number) return 'https://wa.me/'; // no number, link won't open
       return `https://wa.me/${number}`;
   };
 
@@ -257,8 +258,8 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ isOpen, onClose, 
                     {/* Customer Details */}
                     <div className="bg-[#2D2D2D] p-3 rounded-lg">
                         <p className="text-sm text-neutral-400">Customer</p>
-                        <p className="font-bold text-white mt-1">{order.customer.name}</p>
-                        <p className="text-sm text-neutral-300">{order.customer.address}</p>
+                        <p className="font-bold text-white mt-1">{order.customer?.name ?? 'Walk-in Customer'}</p>
+                        <p className="text-sm text-neutral-300">{order.customer?.address ?? '—'}</p>
                         <a href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-2 bg-[#25D366] text-white text-sm font-bold py-1.5 px-3 rounded-full hover:bg-opacity-90">
                             <WhatsAppIcon className="w-4 h-4" />
                             Chat on WhatsApp
@@ -272,10 +273,10 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ isOpen, onClose, 
                             {order.items.map((item, index) => (
                                 <div key={index} className="flex justify-between items-center bg-[#2D2D2D] p-2.5 rounded-lg">
                                     <div>
-                                        <p className="font-semibold text-white">{t(item.name)}</p>
+                                        <p className="font-semibold text-white">{item.name}</p>
                                         <p className="text-sm text-neutral-400">{item.quantity} x {item.price}</p>
                                     </div>
-                                    <p className="font-semibold text-neutral-200">₹{(item.quantity * parseFloat(item.price.replace('₹', ''))).toFixed(2)}</p>
+                                    <p className="font-semibold text-neutral-200">₹{(item.quantity * parseFloat(String(item.price ?? '0').replace('₹', '') || '0')).toFixed(2)}</p>
                                 </div>
                             ))}
                         </div>
@@ -287,7 +288,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ isOpen, onClose, 
                             <p className="font-bold text-white text-lg">Total Bill</p>
                             <p className="text-sm text-neutral-400 font-semibold">Payment: {order.paymentMethod}</p>
                         </div>
-                        <p className="font-bold text-2xl text-[#E6E6FA]">₹{order.total.toFixed(2)}</p>
+                        <p className="font-bold text-2xl text-[#E6E6FA]">₹{Number(order.total ?? 0).toFixed(2)}</p>
                     </div>
                 </div>
             </div>

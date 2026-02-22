@@ -167,7 +167,7 @@ const NewOrderModal: React.FC<NewOrderModalProps> = ({ isOpen, order, onUpdateSt
 
   if (!isOpen || !order) return null;
 
-  const customerFirstName = order.customer.name?.split(' ')[0] || order.id;
+  const customerFirstName = order.customer?.name?.split(' ')[0] ?? order.id;
 
   return (
     <>
@@ -197,7 +197,7 @@ const NewOrderModal: React.FC<NewOrderModalProps> = ({ isOpen, order, onUpdateSt
                 <h3 id="new-order-title" className="text-lg font-bold text-white">
                   {t('new_order_received')}
                 </h3>
-                <p className="text-sm font-semibold text-neutral-400 truncate">{customerFirstName} &bull; {order.customer.address}</p>
+                <p className="text-sm font-semibold text-neutral-400 truncate">{customerFirstName} &bull; {order.customer?.address ?? '—'}</p>
               </div>
               {/* Countdown in seconds */}
               <span className={`text-xs font-bold tabular-nums shrink-0 mt-0.5 ${timeLeft < 120 ? 'text-red-400' : 'text-neutral-500'}`}>
@@ -212,10 +212,10 @@ const NewOrderModal: React.FC<NewOrderModalProps> = ({ isOpen, order, onUpdateSt
                         {order.items.map((item, index) => (
                             <div key={index} className="flex justify-between items-center bg-[#2D2D2D] p-2 rounded-lg">
                                 <div className="flex-1 pr-2">
-                                    <p className="font-semibold text-white truncate">{t(item.name)}</p>
+                                    <p className="font-semibold text-white truncate">{item.name}</p>
                                     <p className="text-sm text-neutral-400">{item.quantity} x {item.price}</p>
                                 </div>
-                                <p className="font-semibold text-neutral-200">₹{(item.quantity * parseFloat(item.price.replace('₹', ''))).toFixed(2)}</p>
+                                <p className="font-semibold text-neutral-200">₹{(item.quantity * parseFloat(String(item.price ?? '0').replace('₹', '') || '0')).toFixed(2)}</p>
                             </div>
                         ))}
                     </div>
@@ -226,7 +226,7 @@ const NewOrderModal: React.FC<NewOrderModalProps> = ({ isOpen, order, onUpdateSt
                         <p className="font-bold text-white text-lg">{t('total_bill')}</p>
                         <p className="text-sm text-neutral-400 font-semibold">{t('payment')}: {order.paymentMethod}</p>
                     </div>
-                    <p className="font-bold text-2xl text-[#E6E6FA]">₹{order.total.toFixed(2)}</p>
+                    <p className="font-bold text-2xl text-[#E6E6FA]">₹{Number(order.total ?? 0).toFixed(2)}</p>
                 </div>
 
                 <div className="pt-2 space-y-3">

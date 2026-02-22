@@ -72,13 +72,13 @@ const OrderCard: React.FC<{ order: Order; onClick: () => void }> = ({ order, onC
                     <p className="font-bold text-white">{order.id}</p>
                     <OrderStatusChip status={order.status} />
                 </div>
-                <p className="text-neutral-300 font-semibold">{order.customer.name}</p>
+                <p className="text-neutral-300 font-semibold">{order.customer?.name ?? 'Walk-in Customer'}</p>
                 <p className="text-neutral-400 text-sm mt-1 truncate">
-                    {order.items.map(i => `${i.quantity}x ${t(i.name)}`).join(', ')}
+                    {order.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}
                 </p>
                 <div className="flex justify-between items-end mt-3">
                     <div>
-                        <p className="text-xl font-bold text-[#E6E6FA]">₹{order.total.toFixed(2)}</p>
+                        <p className="text-xl font-bold text-[#E6E6FA]">₹{Number(order.total ?? 0).toFixed(2)}</p>
                         <div className={`-ml-1 mt-1 px-1.5 py-0.5 rounded-full inline-block ${order.paymentMethod === 'UPI' ? 'bg-purple-500/20 text-purple-300' : 'bg-orange-500/20 text-orange-300'}`}>
                              <p className="text-xs font-bold tracking-wide">{order.paymentMethod}</p>
                         </div>

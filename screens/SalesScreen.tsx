@@ -4,6 +4,9 @@ import Card from '../components/Card.tsx';
 import { Order, OrderStatus } from '../types.ts';
 import { useLanguage } from '../contexts/LanguageContext.tsx';
 
+// Guard against undefined/NaN totals from webhook orders or old localStorage data
+const safeTotal = (order: Order): number => Number(order.total ?? 0) || 0;
+
 // --- Date Helper Functions ---
 const isToday = (date: Date) => {
   const today = new Date();
@@ -61,7 +64,7 @@ const DateFilter: React.FC<{ activeFilter: string; setActiveFilter: (filter: str
 const SalesMetrics: React.FC<{ orders: Order[] }> = ({ orders }) => {
     const { t } = useLanguage();
     const metrics = useMemo(() => {
-        const totalSales = orders.reduce((sum, order) => sum + order.total, 0);
+        const totalSales = orders.reduce((sum, order) => sum + safeTotal(order), 0);
         const orderCount = orders.length;
         const avgValue = orderCount > 0 ? totalSales / orderCount : 0;
         return { totalSales, orderCount, avgValue };
@@ -233,10 +236,10 @@ const SalesScreen: React.FC<{ orders: Order[] }> = ({ orders }) => {
           .filter(o => isToday(new Date(o.timestamp)))
           .forEach(order => {
               const hour = new Date(order.timestamp).getHours();
-              if (hour >= 5 && hour < 12) dayParts[0].value += order.total;
-              else if (hour >= 12 && hour < 17) dayParts[1].value += order.total;
-              else if (hour >= 17 && hour < 21) dayParts[2].value += order.total;
-              else dayParts[3].value += order.total;
+              if (hour >= 5 && hour < 12) dayParts[0].value += safeTotal(order);
+              else if (hour >= 12 && hour < 17) dayParts[1].value += safeTotal(order);
+              else if (hour >= 17 && hour < 21) dayParts[2].value += safeTotal(order);
+              else dayParts[3].value += safeTotal(order);
           });
         return dayParts;
       }
@@ -250,7 +253,7 @@ const SalesScreen: React.FC<{ orders: Order[] }> = ({ orders }) => {
             const dayOfMonth = new Date(order.timestamp).getDate();
             const weekIndex = Math.floor((dayOfMonth - 1) / 7);
             if (weeks[weekIndex]) {
-                weeks[weekIndex].value += order.total;
+                weeks[weekIndex].value += safeTotal(order);
             }
           });
 
@@ -281,7 +284,7 @@ const SalesScreen: React.FC<{ orders: Order[] }> = ({ orders }) => {
                 if (diffDays >= 0 && diffDays < 7) {
                     const index = 6 - diffDays;
                     if(salesByDay[index]){
-                        salesByDay[index].value += order.total;
+                        salesByDay[index].value += safeTotal(order);
                     }
                 }
             });
@@ -307,7 +310,7 @@ const SalesScreen: React.FC<{ orders: Order[] }> = ({ orders }) => {
                             key={order.id}
                             id={order.id.replace('B2C-', '')}
                             time={new Date(order.timestamp).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}
-                            amount={`₹${order.total.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
+                            amount={`₹${safeTotal(order).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
                         />
                     ))
                 ) : (
