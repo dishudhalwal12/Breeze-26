@@ -64,6 +64,8 @@ const AppContent: React.FC = () => {
   );
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // DEMO SHIELD: suppress order modal for 12s after mount/onboarding to block stale n8n replays
+  const [isModalSuppressed, setIsModalSuppressed] = useState(true);
   
   // Auth state
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -116,9 +118,11 @@ const AppContent: React.FC = () => {
     } catch (error) {
         console.error("Failed to check onboarding status from localStorage", error);
         setError("Failed to load onboarding status.");
-        // Fallback to showing onboarding if localStorage is inaccessible
         setShowOnboarding(true);
     }
+    // DEMO SHIELD: lift suppression after 12s from initial mount
+    const suppressTimer = setTimeout(() => setIsModalSuppressed(false), 12000);
+    return () => clearTimeout(suppressTimer);
   }, []);
 
   // Persist orders to localStorage whenever they change
@@ -294,12 +298,16 @@ const AppContent: React.FC = () => {
 
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);
-    setInteractionDone(true); // Start simulation engine after onboarding
+    setInteractionDone(true);
 
     // Re-resolve tabs now that category is written to localStorage
     const category = localStorage.getItem('dukan-store-category');
     const aiContext = localStorage.getItem('dukan-business-intelligence-context');
     setTabs(resolveTabsFromBusinessType(category, aiContext));
+
+    // DEMO SHIELD: re-arm suppression for 12s after onboarding ends
+    setIsModalSuppressed(true);
+    setTimeout(() => setIsModalSuppressed(false), 12000);
 
     // Trigger auth check immediately post-onboarding
     if (!currentUser && !localStorage.getItem('dukan-guest-mode')) {
@@ -330,7 +338,7 @@ const AppContent: React.FC = () => {
             {renderScreen()}
           </main>
           <BottomNav activeScreen={activeScreen} onNavigate={handleNavigation} newOrderCount={newOrderCount} tabs={tabs} />
-           {newOrderForPopup && (
+           {newOrderForPopup && !isModalSuppressed && (
             <NewOrderModal 
               isOpen={!!newOrderForPopup} 
               order={newOrderForPopup} 
