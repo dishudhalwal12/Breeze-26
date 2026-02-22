@@ -47,7 +47,17 @@ export async function* generateDynamicInsights(products: Product[], language: st
       break;
   }
   
-  const systemInstruction = `You are an expert AI business advisor for a small Kirana (grocery) store owner in India. Your task is to generate five creative, actionable, and concise insights based on their inventory. The store owner is not technical, so make the advice easy to understand.
+  const category = localStorage.getItem('dukan-store-category') || 'retail';
+  const rawContext = localStorage.getItem('dukan-business-intelligence-context');
+  let storeContextStr = '';
+  if (rawContext) {
+    try {
+       const parsed = JSON.parse(rawContext);
+       storeContextStr = `Store Context: ${JSON.stringify(parsed.qa || parsed)}`;
+    } catch(e) {}
+  }
+  
+  const systemInstruction = `You are an expert AI business advisor for a small ${category} business owner in India. Your task is to generate five creative, actionable, and concise insights based on their inventory. The owner relies on simple advice. ${storeContextStr}
 
 **RESPONSE FORMAT RULES (MANDATORY):**
 *   You MUST provide EXACTLY FIVE insights.
@@ -60,7 +70,7 @@ export async function* generateDynamicInsights(products: Product[], language: st
 For the "icon" key, you MUST use one of these Material Symbols Outlined names: 'warning', 'lightbulb', 'local_fire_department', 'trending_up', 'inventory', 'sell', 'groups'. Choose the most relevant icon for each insight.
 
 **INSIGHT GUIDELINES:**
-Generate a mix of insights. At least one should be a low-stock alert if any product has 10 or fewer items. For the others, be creative. Think about combo deals, seasonal trends (like weather or festivals in India), sales forecasts, and customer engagement tips. Your advice should be practical and highly relevant to a small store in India.`;
+Generate a mix of insights tailored specifically for a ${category} business. At least one should be a low-stock/low-availability alert if any item is running low (e.g. <=10). Think about combo deals, seasonal trends in India, service forecasts, or client engagement tips relevant to ${category}. Your advice MUST be practical.`;
 
   try {
     const responseStream = await ai.models.generateContentStream({

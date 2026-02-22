@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext.tsx';
 import { GoogleGenAI } from '@google/genai';
 import { saveBusinessProfileToCloud } from '../services/cloudSync.ts';
+import { businessPresets } from '../data/businessPresets.ts';
 
 interface OnboardingFlowProps {
   onComplete: () => void;
@@ -48,7 +49,6 @@ const StoreDetailsStep: React.FC<{ onNext: (details: { storeName: string; storeA
   const { t } = useLanguage();
 
   const handleContinue = () => {
-    const isOther = storeCategory === t('category_other') || storeCategory === 'Other';
     if (storeName.trim() && storeAddress.trim() && storeCategory.trim()) {
       onNext({ storeName, storeAddress, storeCategory });
     }
@@ -99,10 +99,9 @@ const StoreDetailsStep: React.FC<{ onNext: (details: { storeName: string; storeA
               style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23e6e6fa' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center', backgroundSize: '1.5em 1.5em' }}
             >
               <option className="bg-[#1A1A1A] text-white" value="">{t('onboarding_select_category')}</option>
-              <option className="bg-[#1A1A1A] text-white" value="Grocery">Grocery / Kirana</option>
-              <option className="bg-[#1A1A1A] text-white" value="Salon">Salon / Spa</option>
-              <option className="bg-[#1A1A1A] text-white" value="Restaurant">Restaurant / Cafe</option>
-              <option className="bg-[#1A1A1A] text-white" value="Chemist">Chemist / Pharmacy</option>
+              {businessPresets.map((preset) => (
+                <option key={preset.key} className="bg-[#1A1A1A] text-white" value={preset.displayName}>{preset.displayName}</option>
+              ))}
               <option className="bg-[#1A1A1A] text-white" value="Other">Other</option>
             </select>
           </div>
@@ -181,14 +180,13 @@ const BusinessContextStep: React.FC<{
 
   const q1Options = (() => {
     switch (details.storeCategory) {
-      case 'Grocery':
       case 'Grocery / Kirana':
+      case 'Pharmacy':
         return ['Managing expired inventory', 'Tracking customer credit (Udhar)', 'Competing with quick commerce', 'Managing multiple suppliers'];
       case 'Salon':
-      case 'Salon / Spa':
         return ['Empty slots during weekdays', 'Managing staff schedules', 'Retaining loyal clients', 'No-shows on appointments'];
       case 'Restaurant':
-      case 'Restaurant / Cafe':
+      case 'Cafe':
         return ['Food wastage', 'Managing rush hours', 'High delivery commissions', 'Inconsistent food quality'];
       default:
         return ['Getting new customers', 'Managing cash flow', 'Hiring good staff', 'Tracking inventory'];
@@ -271,7 +269,56 @@ const BusinessContextStep: React.FC<{
     }
   };
 
-  const handleNext = () => {
+  const generateOtherCatalogSeed = async (bizContext: string) => {
+    try {
+      // @ts-ignore
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) return;
+
+      const ai = new GoogleGenAI({ apiKey });
+      const prompt = `You are an AI configuring a retail inventory app for a small Indian business. The business type is: "${bizContext}". Generate exactly 6 realistic products or services this business sells in India. Use popular Indian brands where relevant (e.g. Amul, Patanjali, Himalaya, boAt, Parle). Keep product names concise and in English. Prices must be realistic Indian Rupees (number only, no symbol). Stock must be between 5 and 200. Give an appropriate unit (e.g., pcs, kgs, hrs, sessions, bottles). Finally, pick EXACTLY ONE Material Icon name that best represents this business (e.g. 'store', 'camera', 'fitness_center', 'pets', 'local_florist'). IMPORTANT: YOU MUST RETURN ONLY STRICT, VALID JSON. Schema: {"icon": "material_icon_name", "catalog": [{ "name": "string", "price": number, "stock": number, "unit": "string" }]}`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: { responseMimeType: 'application/json' },
+      });
+
+      if (response.text) {
+        let cleanText = response.text.trim();
+        if (cleanText.startsWith('```json')) cleanText = cleanText.substring(7);
+        if (cleanText.startsWith('```')) cleanText = cleanText.substring(3);
+        if (cleanText.endsWith('```')) cleanText = cleanText.substring(0, cleanText.length - 3);
+        
+        const data = JSON.parse(cleanText);
+        if (data && typeof data.icon === 'string') {
+           const safeIcon = /^[a-z_]+$/.test(data.icon) ? data.icon : 'store';
+           localStorage.setItem('dukan-custom-tab-icon', safeIcon);
+        }
+
+        if (data && Array.isArray(data.catalog) && data.catalog.length > 0) {
+           const dynamicCatalog = data.catalog.map((item: any) => ({
+             name: item.name || 'Custom Item',
+             price: item.price || 100,
+             stock: parseInt(item.stock) || 10,
+             unit: item.unit || 'pos'
+           }));
+           localStorage.setItem('dukaan-custom-catalog-seed', JSON.stringify(dynamicCatalog));
+           return;
+        }
+      }
+    } catch (e) {
+      console.warn("Dynamic catalog generation failed", e);
+    }
+    
+    // Fallback if fails
+    localStorage.setItem('dukan-custom-tab-icon', 'store');
+    localStorage.setItem('dukaan-custom-catalog-seed', JSON.stringify([
+      { name: "Service/Item 1", price: 100, stock: 10, unit: "unit" }
+    ]));
+  };
+
+  const handleNext = async () => {
     const finalSelection = currentQ?.type === 'input' 
        ? [customInput] 
        : currentSelection.includes('Other') && customInput.trim() 
@@ -281,39 +328,45 @@ const BusinessContextStep: React.FC<{
     if (finalSelection.length === 0) return;
     
     setIsTransitioning(true);
-    setTimeout(() => {
-      const newAnswers = [...answers, finalSelection];
-      if (stepIndex >= totalSteps - 1) {
-        
-        // Build the comprehensive onboarding dataset
-        const completeData = {
-          businessContext: details,
-          timestamp: new Date().toISOString(),
-          qa: newAnswers.map((ans, i) => {
-             const q = getQuestionConfig(i);
-             return {
-                question: q?.title,
-                intent: q?.intent || 'preset_fallback',
-                type: q?.type,
-                answer: ans
-             };
-          })
-        };
-        localStorage.setItem('dukan-business-intelligence-context', JSON.stringify(completeData));
+    
+    const newAnswers = [...answers, finalSelection];
+    if (stepIndex >= totalSteps - 1) {
+      setIsLoading(true);
+      
+      const completeData = {
+        businessContext: details,
+        timestamp: new Date().toISOString(),
+        qa: newAnswers.map((ans, i) => {
+           const q = getQuestionConfig(i);
+           return {
+              question: q?.title,
+              intent: q?.intent || 'preset_fallback',
+              type: q?.type,
+              answer: ans
+           };
+        })
+      };
+      localStorage.setItem('dukan-business-intelligence-context', JSON.stringify(completeData));
 
-        onComplete({
-          answers: newAnswers,
-          rawCategory: details.storeCategory
-        });
-      } else {
+      if (isOtherCategory) {
+        const contextStr = newAnswers[newAnswers.length - 1]?.[0] || details.storeName;
+        await generateOtherCatalogSeed(contextStr);
+      }
+
+      onComplete({
+        answers: newAnswers,
+        rawCategory: details.storeCategory
+      });
+    } else {
+      setTimeout(() => {
         setAnswers(newAnswers);
         setCurrentSelection([]);
         setCustomInput('');
         setIsOptionsExpanded(false);
         setStepIndex(stepIndex + 1);
         setIsTransitioning(false);
-      }
-    }, 500);
+      }, 500);
+    }
   };
 
   if (isLoading) {
