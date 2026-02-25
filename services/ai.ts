@@ -1,6 +1,29 @@
 
 import { Product, Insight } from '../types.ts';
 import { withGeminiStreamFailover } from '../utils/geminiClient.ts';
+
+const ALLOWED_ICONS = new Set([
+  'warning', 'lightbulb', 'local_fire_department', 'trending_up',
+  'inventory', 'sell', 'groups', 'add_shopping_cart', 'error',
+]);
+
+function isValidInsight(value: unknown): value is Insight {
+  if (!value || typeof value !== 'object') return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.icon === 'string' &&
+    typeof v.title === 'string' && v.title.length > 0 && v.title.length <= 200 &&
+    typeof v.description === 'string' && v.description.length > 0 && v.description.length <= 600
+  );
+}
+
+function sanitizeInsight(raw: Insight): Insight {
+  return {
+    icon: ALLOWED_ICONS.has(raw.icon) ? raw.icon : 'lightbulb',
+    title: raw.title.slice(0, 200),
+    description: raw.description.slice(0, 600),
+  };
+}
 export async function* generateDynamicInsights(products: Product[], language: string): AsyncGenerator<Insight> {
   if (!products || products.length === 0) {
     yield { icon: 'add_shopping_cart', title: 'Add Your First Product', description: 'Add products to your catalog to start getting AI insights.' };
@@ -79,8 +102,12 @@ Generate a mix of insights tailored specifically for a ${category} business. At 
             buffer = buffer.substring(newlineIndex + 1);
             if (line) {
                 try {
-                    const insight: Insight = JSON.parse(line);
-                    yield insight;
+                    const parsed = JSON.parse(line);
+                    if (isValidInsight(parsed)) {
+                        yield sanitizeInsight(parsed);
+                    } else {
+                        console.warn("Insight failed schema validation:", line);
+                    }
                 } catch (e) {
                     console.warn("Could not parse insight from stream:", line, e);
                 }
@@ -90,8 +117,12 @@ Generate a mix of insights tailored specifically for a ${category} business. At 
     // Process any remaining part of the buffer
     if (buffer.trim()) {
         try {
-            const insight: Insight = JSON.parse(buffer.trim());
-            yield insight;
+            const parsed = JSON.parse(buffer.trim());
+            if (isValidInsight(parsed)) {
+                yield sanitizeInsight(parsed);
+            } else {
+                console.warn("Final insight failed schema validation:", buffer.trim());
+            }
         } catch (e) {
             console.warn("Could not parse final insight from stream:", buffer.trim(), e);
         }

@@ -61,7 +61,8 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
         // If AI-verified seed exists and category matches — trust it as-is.
         // This also handles re-renders and hot-reloads without re-seeding.
         if (storedProducts && seededForCategory === category && aiSeedDone === 'true') {
-          setProducts(JSON.parse(storedProducts));
+          const parsed = JSON.parse(storedProducts);
+          if (Array.isArray(parsed)) setProducts(parsed);
           setLoading(false);
           return;
         }
@@ -114,7 +115,8 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
         (seededForCategory === null || seededForCategory !== category);
 
       if (storedProducts && !categoryMismatch) {
-        setProducts(JSON.parse(storedProducts));
+        const parsed = JSON.parse(storedProducts);
+        if (Array.isArray(parsed)) setProducts(parsed);
       } else {
         let initialSeed: Product[] = initialProducts;
 

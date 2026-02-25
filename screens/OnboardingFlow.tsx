@@ -3,6 +3,7 @@ import { useLanguage } from '../contexts/LanguageContext.tsx';
 import { withGeminiFailover } from '../utils/geminiClient.ts';
 import { saveBusinessProfileToCloud } from '../services/cloudSync.ts';
 import { businessPresets } from '../data/businessPresets.ts';
+import { sanitizeForPrompt } from '../utils/sanitize.ts';
 
 interface OnboardingFlowProps {
   onComplete: () => void;
@@ -138,8 +139,11 @@ const BusinessContextStep: React.FC<{
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 1500);
 
-        const userName = localStorage.getItem('dukan-profile-name') || 'the owner';
-        const prompt = `You are a top-tier MBA business consultant. The user owns a '${details.storeCategory}' small business named '${details.storeName}' in India at '${details.storeAddress}'. The user's name is '${userName}'. Generate a dynamic onboarding questionnaire of 4 to 7 highly intelligent questions to deeply understand their specific business context. Include a mix of MCQ ('select') and subjective ('input') questions. Respond ONLY in strictly valid JSON format. Schema: {"questions": [{"type": "select" | "input", "title": "string (the question)", "options": ["string"] (required if select, max 5), "intent": "string (short key representing question intent)", "subtext": "string (optional)", "multiSelect": boolean (optional)}]}`;
+        const userName = sanitizeForPrompt(localStorage.getItem('dukan-profile-name') || 'the owner');
+        const safeCategory = sanitizeForPrompt(details.storeCategory);
+        const safeStoreName = sanitizeForPrompt(details.storeName);
+        const safeAddress = sanitizeForPrompt(details.storeAddress);
+        const prompt = `You are a top-tier MBA business consultant. The user owns a '${safeCategory}' small business named '${safeStoreName}' in India at '${safeAddress}'. The user's name is '${userName}'. Generate a dynamic onboarding questionnaire of 4 to 7 highly intelligent questions to deeply understand their specific business context. Include a mix of MCQ ('select') and subjective ('input') questions. Respond ONLY in strictly valid JSON format. Schema: {"questions": [{"type": "select" | "input", "title": "string (the question)", "options": ["string"] (required if select, max 5), "intent": "string (short key representing question intent)", "subtext": "string (optional)", "multiSelect": boolean (optional)}]}`;
 
         const response = await withGeminiFailover((client) =>
           client.models.generateContent({
@@ -302,6 +306,8 @@ const BusinessContextStep: React.FC<{
     // always has something safe to read — even if this function throws.
     localStorage.setItem('dukaan-custom-catalog-seed', JSON.stringify(NEUTRAL_FALLBACK));
 
+    const safeBizContext = sanitizeForPrompt(bizContext);
+
     try {
       // ── Hardened prompt with grocery blocklist + one-shot example ──────────
       // The example anchors Gemini to domain-specific items and away from its
@@ -309,7 +315,7 @@ const BusinessContextStep: React.FC<{
       // that fires even if the model ignores Rule 2.
       const prompt = `You are generating a starter product catalog for a small Indian business.
 
-Business type: "${bizContext}"
+Business type: "${safeBizContext}"
 
 RULES (follow all strictly):
 1. Every item must be directly sold or offered by this specific business type.
@@ -329,7 +335,7 @@ EXAMPLE — if business type is "Fish Shop":
   { "name": "Fresh Tuna", "price": 450, "stock": 12, "unit": "kg" }
 ]}
 
-Now generate for: "${bizContext}"
+Now generate for: "${safeBizContext}"
 
 Return format:
 {

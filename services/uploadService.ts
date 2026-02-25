@@ -4,6 +4,7 @@ import { Order, OrderItem, OrderStatus } from '../types.ts';
 import { ruleBasedWhatsAppParser } from '../utils/parsers.ts';
 import { generateRandomPhoneNumber } from '../utils/phone.ts';
 import { withGeminiFailover } from '../utils/geminiClient.ts';
+import { sanitizeCsvField } from '../utils/sanitize.ts';
 
 // Helper to convert an uploaded File to base64
 // This is required for inlineData parameter in @google/genai API
@@ -181,7 +182,7 @@ export const processCsvFile = async (file: File): Promise<Order[]> => {
                 return foundKey ? row[foundKey] : undefined;
             };
 
-            const name = getVal(['product', 'name', 'item', 'product name']) || 'Uploaded Item';
+            const name = sanitizeCsvField(getVal(['product', 'name', 'item', 'product name']) || 'Uploaded Item');
             const quantityRaw = getVal(['quantity', 'qty']) || 1;
             const quantity = parseInt(String(quantityRaw).trim(), 10) || 1;
             
